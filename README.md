@@ -1,5 +1,4 @@
 ## iKGD
-----
 A fully automated tool to grab AES keys for iOS firmwares. iKGD takes about 25 seconds to extract the firmware, parse stuff we need, exploit the device and run iKGD cyanide payload, grab keys, make The iPhone Wiki keys file and opensn0w plist.
 
 ### Usage
