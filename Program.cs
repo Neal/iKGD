@@ -245,7 +245,7 @@
 					Utils.irecovery_fbecho("=========================");
 				}
 			}
-			Utils.ConsoleWriteLine((iv[9].Contains("0x0") || string.IsNullOrEmpty(iv[9]) ? "   [FAILED]" : "   [DONE]"), ConsoleColor.DarkGray);
+			Utils.ConsoleWriteLine((iv[9].Contains("0x") || string.IsNullOrEmpty(iv[9]) ? "   [FAILED]" : "   [DONE]"), ConsoleColor.DarkGray);
 			if (RebootDevice) Utils.irecovery("-kick");
 
 			// Decrypt ramdisks

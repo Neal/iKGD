@@ -10,7 +10,6 @@ using System.Threading;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using RemoteZip;
@@ -282,18 +281,18 @@ namespace iKGD
 		public static string ExecuteCommandAndGetOutput(string command)
 		{
 			try
-            {
+			{
 				ProcessStartInfo info = new ProcessStartInfo("cmd", "/c " + command)
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardError = true,
-                    RedirectStandardOutput = true
-                };
+				{
+					CreateNoWindow = true,
+					UseShellExecute = false,
+					RedirectStandardError = true,
+					RedirectStandardOutput = true
+				};
 				Process process = new Process { StartInfo = info };
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
+				process.Start();
+				string output = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
 				return output;
 			}
 			catch (Exception) { }
