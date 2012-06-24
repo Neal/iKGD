@@ -1,19 +1,19 @@
-﻿namespace iKGD
-{
-	using Microsoft.VisualBasic;
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-	using System.Data;
-	using System.Diagnostics;
-	using System.IO;
-	using System.Net;
-	using System.Reflection;
-	using System.Text;
-	using RemoteZip;
-	using PlistCS;
-	using XGetoptCS;
+﻿using Microsoft.VisualBasic;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Text;
+using RemoteZip;
+using PlistCS;
+using XGetoptCS;
 
+namespace iKGD
+{
 	internal sealed class iKGD
 	{
 		public static string Version = "1.0";

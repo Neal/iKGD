@@ -114,19 +114,19 @@ namespace iKGD
 
 		public static string dmg_extract(string _in, string _out, string key)
 		{
-            return ExecuteCommandAndGetOutput(iKGD.Resources + "dmg.exe extract \"" + _in + "\" " + _out + " -k \"" + key + "\"");
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "dmg.exe extract \"" + _in + "\" " + _out + " -k \"" + key + "\"");
 		}
 		public static string genpass(string platform, string ramdisk, string filesystem)
 		{
-            return ExecuteCommandAndGetOutput(iKGD.Resources + "genpass.exe -p " + platform + " -r " + ramdisk + " -f " + filesystem);
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "genpass.exe -p " + platform + " -r " + ramdisk + " -f " + filesystem);
 		}
-        public static string hfsplus_extractall(string image, string path, string dest)
+		public static string hfsplus_extractall(string image, string path, string dest)
 		{
-            return ExecuteCommandAndGetOutput(iKGD.Resources + "hfsplus.exe \"" + image + "\" extractall " + path + " \"" + dest + "\"");
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "hfsplus.exe \"" + image + "\" extractall " + path + " \"" + dest + "\"");
 		}
 		public static string irecovery(string cmd)
 		{
-            return ExecuteCommandAndGetOutput(iKGD.Resources + "irecovery.exe " + cmd);
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "irecovery.exe " + cmd);
 		}
 		public static string irecovery_cmd(string cmd)
 		{
@@ -146,7 +146,7 @@ namespace iKGD
 		}
 		public static string xpwntool(string infile, string outfile)
 		{
-            return ExecuteCommandAndGetOutput(iKGD.Resources + "xpwntool.exe \"" + infile + "\" \"" + outfile + "\"");
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "xpwntool.exe \"" + infile + "\" \"" + outfile + "\"");
 		}
 		public static string xpwntool(string infile, string outfile, string iv, string key)
 		{
