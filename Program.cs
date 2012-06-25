@@ -21,9 +21,13 @@ namespace iKGD
 		public static string IPSWdir = TempDir + @"IPSW\";
 		public static string Resources = TempDir + @"Resources\";
 		public static string KeysDir = @"C:\IPSW\Keys\";
+		public static string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dropbox\\host.db");
+		public static string DropboxDir = ASCIIEncoding.ASCII.GetString(Convert.FromBase64String(File.ReadAllLines(dbPath)[1])) + "\\";
 
 		public static string IPSWLocation, IPSWurl, ReqDevice, ReqFirmware = "";
 		public static bool isIPSWRemote = false;
+		public static bool RunningRemotelyServer = false;
+		public static bool RunningRemotelyHome = false;
 		public static bool RebootDevice = true;
 		public static bool Verbose = false;
 
@@ -46,7 +50,7 @@ namespace iKGD
 
 			char c;
 			XGetopt g = new XGetopt();
-			while ((c = g.Getopt(args.Length, args, "evi:u:d:f:r")) != '\0')
+			while ((c = g.Getopt(args.Length, args, "evi:u:d:f:rSH")) != '\0')
 			{
 				switch (c)
 				{
@@ -57,11 +61,70 @@ namespace iKGD
 					case 'k': KeysDir = g.Optarg; break;
 					case 'r': RebootDevice = false; break;
 					case 'e': ExtractFullRootFS = true; break;
+					case 'S': RunningRemotelyServer = true; break;
+					case 'H': RunningRemotelyHome = true; break;
 					case 'v': Verbose = true; break;
 				}
 			}
 
-			if (!string.IsNullOrEmpty(IPSWLocation))
+			Console.WriteLine("Checking resources...");
+			Utils.CheckResources();
+
+			if (RunningRemotelyHome)
+			{
+				string RemoteFileLocation = DropboxDir + "share\\";
+				Console.WriteLine("Running iKGD in remote mode from home!");
+				if (!Utils.irecovery_getenv("iKGD").Contains("true"))
+				{
+					int count = 1;
+					Console.Write("Waiting for device in DFU mode...");
+					while (!Utils.SearchDeviceInMode("DFU"))
+					{
+						Console.CursorLeft = 0;
+						Console.Write("Waiting for device in DFU mode...  [{0}]", count);
+						Utils.Delay(1);
+						count++;
+					}
+					PluggedInDevice = Utils.irecovery("-getboardid").Trim();
+					Console.CursorLeft = 0;
+					Console.WriteLine("Waiting for device in DFU mode...   [Found {0}]", PluggedInDevice);
+					Utils.PwnDevice(PluggedInDevice);
+				}
+				Console.WriteLine("Looking for remote.ikgd in Dropbox");
+				if (!FileIO.File_Exists(RemoteFileLocation + "remote.ikgd"))
+				{
+					Console.WriteLine("Unable to find {0}", RemoteFileLocation + "remote.ikgd");
+					Environment.Exit((int)ExitCode.UnknownError);
+				}
+				int i = 0;
+				Console.Write("Grabbing keys...");
+				foreach (String line in File.ReadAllLines(RemoteFileLocation + "remote.ikgd"))
+				{
+					foreach (String part in line.Split('\n', '\r'))
+					{
+						if (!string.IsNullOrEmpty(part))
+							Utils.irecovery_cmd("go aes dec " + part);
+						iv[i] = Utils.irecovery_getenv("iv").Trim();
+						key[i] = Utils.irecovery_getenv("key").Trim();
+						i++;
+					}
+				}
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				Console.Write("Writing files for remote server...");
+				using (StreamWriter writer = new StreamWriter(RemoteFileLocation + "remote.ikgd.ivs"))
+				{
+					for (int j = 0; j < i; j++)
+						writer.WriteLine(iv[j]);
+				}
+				using (StreamWriter writer = new StreamWriter(RemoteFileLocation + "remote.ikgd.keys"))
+				{
+					for (int j = 0; j < i; j++)
+						writer.WriteLine(key[j]);
+				}
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				Environment.Exit((int)ExitCode.Success);
+			}
+			else if (!string.IsNullOrEmpty(IPSWLocation))
 			{
 				if (!FileIO.File_Exists(IPSWLocation))
 				{
@@ -100,6 +163,8 @@ namespace iKGD
 				Console.WriteLine("  -d <device>           Device boardid as n90ap to fetch URL (use with -f)");
 				Console.WriteLine("  -f <firmwarebuild>    Firmware build as 9A334 to fetch URL (use with -d)");
 				Console.WriteLine("  -k <keysdir>          Path to dir to store keys (default \"{0}\"", KeysDir);
+				Console.WriteLine("  -S                    Running on server (also run -H at home)");
+				Console.WriteLine("  -H                    Use with -S to get keys from home");
 				Console.WriteLine("  -e                    Extract full root filesystem (only with -i)");
 				Console.WriteLine("  -r                    Don't reboot device.");
 				Console.WriteLine("  -v                    Verbose");
@@ -110,9 +175,6 @@ namespace iKGD
 				Console.WriteLine();
 				Environment.Exit((int)ExitCode.Usage);
 			}
-
-			Console.WriteLine("Checking resources...");
-			Utils.CheckResources();
 
 			Stopwatch timer = new Stopwatch();
 			timer.Start();
@@ -125,24 +187,12 @@ namespace iKGD
 					FileIO.Directory_Create(IPSWdir);
 					Console.WriteLine("Firmware: " + Path.GetFileNameWithoutExtension(IPSWurl));
 					Console.Write("Downloading essential files...");
-//					string[] EssZipFiles = new string[] { "Restore.plist", "BuildManifest.plist" };
-//					string[] EssLocalPath = new string[] { IPSWdir + "Restore.plist", IPSWdir + "BuildManifest.plist" };
-//					Remote.DownloadFileFromZip(IPSWurl, EssZipFiles, EssLocalPath);
 					Remote.DownloadFileFromZip(IPSWurl, "Restore.plist", IPSWdir + "Restore.plist");
 					Remote.DownloadFileFromZip(IPSWurl, "BuildManifest.plist", IPSWdir + "BuildManifest.plist");
 					Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 					Console.WriteLine("Parsing Restore.plist");
 					Utils.ParseRestorePlist(IPSWdir + "Restore.plist");
 					Console.Write("Downloading images...");
-//					string[] FilePathInZip = new string[images.Length - 2];
-//					string[] LocalPath = new string[images.Length - 2];
-//					for (int i = 0; i < images.Length -2; i++)
-//					{
-//						string img = Utils.GetImagePathFromBuildManifest(images[i+2], IPSWdir + "BuildManifest.plist");
-//						FilePathInZip[i] = img;
-//						LocalPath[i] = IPSWdir + Path.GetFileName(img);
-//					}
-//					Remote.DownloadFileFromZip(IPSWurl, FilePathInZip, LocalPath);
 					for (int i = 2; i < images.Length; i++)
 					{
 						string img = Utils.GetImagePathFromBuildManifest(images[i], IPSWdir + "BuildManifest.plist");
@@ -208,58 +258,108 @@ namespace iKGD
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 
-			// DFU
-			if (!Utils.irecovery_getenv("iKGD").Contains("true"))
+			if (RunningRemotelyServer)
 			{
-				int count = 1;
-				Console.Write("Waiting for device in DFU mode...");
-				while (!Utils.SearchDeviceInMode("DFU"))
+				string RemoteFileLocation = DropboxDir + "share\\";
+				FileIO.File_Delete(RemoteFileLocation + "remote.ikgd");
+				FileIO.File_Delete(RemoteFileLocation + "remote.ikgd.ivs");
+				FileIO.File_Delete(RemoteFileLocation + "remote.ikgd.keys");
+				Console.Write("Making remote.ikgd for home...");
+				using (StreamWriter writer = new StreamWriter(RemoteFileLocation + "remote.ikgd"))
 				{
-					Console.CursorLeft = 0;
-					Console.Write("Waiting for device in DFU mode...  [{0}]", count);
-					Utils.Delay(1);
-					count++;
+					for (int j = 0; j < kbags.Length; j++)
+						writer.WriteLine(kbags[j]);
 				}
-				PluggedInDevice = Utils.irecovery("-getboardid").Trim();
-				Console.CursorLeft = 0;
-				Console.WriteLine("Waiting for device in DFU mode...   [Found {0}]", PluggedInDevice);
-				if (!Utils.DeviceIsCompatible(PluggedInDevice))
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				Console.Write("Waiting for {0}", RemoteFileLocation + "remote.ikgd.ivs");
+				while (!FileIO.File_Exists(RemoteFileLocation + "remote.ikgd.ivs")) { };
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				Utils.Delay(1);
+				int i = 0;
+				Console.Write("Getting IVs...");
+				foreach (String line in File.ReadAllLines(RemoteFileLocation + "remote.ikgd.ivs"))
 				{
-					Console.WriteLine("\nERROR: {0} is not compatible with iKGD yet!\n", PluggedInDevice);
-					Environment.Exit((int)ExitCode.IncompatibleDevice);
+					foreach (String part in line.Split('\n', '\r'))
+					{
+						iv[i] = part;
+						i++;
+					}
 				}
-				if (Utils.irecovery("-platform").Trim() != Platform)
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				Console.Write("Waiting for {0}", RemoteFileLocation + "remote.ikgd.keys");
+				while (!FileIO.File_Exists(RemoteFileLocation + "remote.ikgd.keys")) { };
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				Utils.Delay(1);
+				i = 0;
+				Console.Write("Getting Keys...");
+				foreach (String line in File.ReadAllLines(RemoteFileLocation + "remote.ikgd.keys"))
 				{
-					Console.WriteLine("\nERROR: Plugged in device is not the same platform as the ipsw!");
-					Console.Write("\nYou plugged in a {0} while you're", Utils.irecovery("-platform").Trim());
-					Console.Write("\ntrying to get keys for " + Platform + ".\n\n");
-					Environment.Exit((int)ExitCode.PlatformNotSame);
+					foreach (String part in line.Split('\n', '\r'))
+					{
+						key[i] = part;
+						i++;
+					}
 				}
-				Utils.PwnDevice(PluggedInDevice);
+				Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+				FileIO.File_Delete(RemoteFileLocation + "remote.ikgd");
+				FileIO.File_Delete(RemoteFileLocation + "remote.ikgd.ivs");
+				FileIO.File_Delete(RemoteFileLocation + "remote.ikgd.keys");
 			}
 			else
 			{
-				Console.WriteLine("Found device running iKGD payload");
-			}
-			irecv_fbechoikgd();
-
-			// Grab Keys
-			Console.Write("Grabbing keys...");
-			for (int i = 0; i < images.Length; i++)
-			{
-				if ((RestoreRamdiskIsEncrypted && i == 1) || (UpdateRamdiskIsEncrypted && i == 0) || (i > 1))
+				// DFU
+				if (!Utils.irecovery_getenv("iKGD").Contains("true"))
 				{
-					Utils.irecovery_fbecho(images[i]);
-					Utils.irecovery_cmd("go aes dec " + kbags[i]);
-					iv[i] = Utils.irecovery_getenv("iv").Trim();
-					key[i] = Utils.irecovery_getenv("key").Trim();
-					Utils.irecovery_fbecho("IV: " + iv[i]);
-					Utils.irecovery_fbecho("Key: " + key[i]);
-					Utils.irecovery_fbecho("=========================");
+					int count = 1;
+					Console.Write("Waiting for device in DFU mode...");
+					while (!Utils.SearchDeviceInMode("DFU"))
+					{
+						Console.CursorLeft = 0;
+						Console.Write("Waiting for device in DFU mode...  [{0}]", count);
+						Utils.Delay(1);
+						count++;
+					}
+					PluggedInDevice = Utils.irecovery("-getboardid").Trim();
+					Console.CursorLeft = 0;
+					Console.WriteLine("Waiting for device in DFU mode...   [Found {0}]", PluggedInDevice);
+					if (!Utils.DeviceIsCompatible(PluggedInDevice))
+					{
+						Console.WriteLine("\nERROR: {0} is not compatible with iKGD yet!\n", PluggedInDevice);
+						Environment.Exit((int)ExitCode.IncompatibleDevice);
+					}
+					if (Utils.irecovery("-platform").Trim() != Platform)
+					{
+						Console.WriteLine("\nERROR: Plugged in device is not the same platform as the ipsw!");
+						Console.Write("\nYou plugged in a {0} while you're", Utils.irecovery("-platform").Trim());
+						Console.Write("\ntrying to get keys for " + Platform + ".\n\n");
+						Environment.Exit((int)ExitCode.PlatformNotSame);
+					}
+					Utils.PwnDevice(PluggedInDevice);
 				}
+				else
+				{
+					Console.WriteLine("Found device running iKGD payload");
+				}
+				irecv_fbechoikgd();
+
+				// Grab Keys
+				Console.Write("Grabbing keys...");
+				for (int i = 0; i < images.Length; i++)
+				{
+					if ((RestoreRamdiskIsEncrypted && i == 1) || (UpdateRamdiskIsEncrypted && i == 0) || (i > 1))
+					{
+						Utils.irecovery_fbecho(images[i]);
+						Utils.irecovery_cmd("go aes dec " + kbags[i]);
+						iv[i] = Utils.irecovery_getenv("iv").Trim();
+						key[i] = Utils.irecovery_getenv("key").Trim();
+						Utils.irecovery_fbecho("IV: " + iv[i]);
+						Utils.irecovery_fbecho("Key: " + key[i]);
+						Utils.irecovery_fbecho("=========================");
+					}
+				}
+				Utils.ConsoleWriteLine((iv[9].Contains("0x") || string.IsNullOrEmpty(iv[9]) ? "   [FAILED]" : "   [DONE]"), ConsoleColor.DarkGray);
+				if (RebootDevice) Utils.irecovery("-kick");
 			}
-			Utils.ConsoleWriteLine((iv[9].Contains("0x") || string.IsNullOrEmpty(iv[9]) ? "   [FAILED]" : "   [DONE]"), ConsoleColor.DarkGray);
-			if (RebootDevice) Utils.irecovery("-kick");
 
 			// Decrypt ramdisks
 			Console.Write("Decrypting ramdisks...");
@@ -324,14 +424,6 @@ namespace iKGD
 			Console.Write("Making opensn0w Keys plist...");
 			Utils.MakeOpensn0wPlist(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist");
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
-			
-			// Extract root filesystem
-			if (ExtractFullRootFS)
-			{
-				Console.Write("Decrypting the Root FileSystem...");
-				Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + "RootFS.dmg", VFDecryptKey);
-				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + "RootFS.dmg") != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
-			}
 
 			// Copy keys
 			Console.Write("Copying keys to the keys directory");
@@ -342,6 +434,16 @@ namespace iKGD
 			}
 			Utils.ConsoleWriteLine(FileIO.File_Exists(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 
+			// Extract root filesystem
+			if (ExtractFullRootFS)
+			{
+				Console.Write("Decrypting the Root FileSystem...");
+				Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + "RootFS.dmg", VFDecryptKey);
+				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + "RootFS.dmg") != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+			}
+
+			// Do we need to do anything else?
+			// With the files in tempdir? Decrypt them?
 
 			timer.Stop();
 			Console.WriteLine("Elapsed for {0} seconds", (double) timer.ElapsedMilliseconds / 1000);

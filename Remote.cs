@@ -71,7 +71,7 @@ namespace iKGD
 							if (current.Name == FilePathInZip[i])
 							{
 								if (iKGD.Verbose)
-									Console.WriteLine("[v]: downloading " + Path.GetFileName(FilePathInZip[i]));
+									Console.WriteLine("\r[v]: downloading " + Path.GetFileName(FilePathInZip[i]));
 								FileStream output = new FileStream(LocalPath[i], FileMode.OpenOrCreate, FileAccess.ReadWrite);
 								CopyStream(file.GetInputStream(current), output);
 								output.Close();
@@ -112,14 +112,8 @@ namespace iKGD
 			return false;
 		}
 
-		public static void DownloadFileFromZipInBackground(string ZipURL, string FilePathInZip, string LocalPath)
-		{
-			try
-			{
-				Utils.ExecuteCommandAsync("START /B \"Downloading file from zip\" " + iKGD.Resources + "PartialZip.exe \"" + ZipURL + "\" \"" + FilePathInZip + "\" \"" + LocalPath + "\" >NUL 2>&1");
-			}
-			catch (Exception) { }
-		}
+		// Worst way of doing this, I know. D:
+		// TODO: figure out a way to do it with RemoteZipFile.cs
 		public static void DownloadFileFromZipInBackground(string ZipURL, string FilePathInZip, string LocalPath, long bytesToDownload)
 		{
 			try
@@ -127,7 +121,7 @@ namespace iKGD
 				Utils.ExecuteCommandAsync("START /B \"Downloading file from zip\" " + iKGD.Resources + "PartialZip.exe \"" + FilePathInZip + "\" \"" + LocalPath + "\" >NUL 2>&1");
 				while (FileIO.File_Exists(LocalPath)) { }
 				while (Utils.GetFileSizeOnDisk(LocalPath) <= bytesToDownload) { }
-				Utils.ExecuteCommand("taskkill /F /IM RemoteZip.exe >NUL");
+				Utils.ExecuteCommand("TASKKILL /F /IM RemoteZip.exe >NUL");
 			}
 			catch (Exception) { }
 		}
