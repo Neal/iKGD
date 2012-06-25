@@ -9,6 +9,8 @@ A fully automated tool to grab AES keys for iOS firmwares. iKGD takes about 25 s
 	  -d <device>           Device boardid as n90ap to fetch URL (use with -f)
 	  -f <firmwarebuild>    Firmware build as 9A334 to fetch URL (use with -d)
 	  -k <keysdir>          Path to dir to store keys (default "C:\IPSW\Keys\")
+	  -S                    Running on server (also run -H at home)
+	  -H                    Use with -S to get keys from home
 	  -e                    Extract full root filesystem (only with -i)
 	  -r                    Don't reboot device.
 	  -v                    Verbose
@@ -16,6 +18,7 @@ A fully automated tool to grab AES keys for iOS firmwares. iKGD takes about 25 s
 + Use `-i` if you have the firmware locally.
 + Use `-u` if you have a link to the firmware you want to download files from. (about 20-25MB)
 + Use `-d` and `-f` and fetch the url from Firmware Links API and continue what `-u` would do.
++ `-S` and `-H` are used when you have the ipsw on a remote server and device on the other.
 
 ### Credits
 
