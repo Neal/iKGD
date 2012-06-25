@@ -44,12 +44,11 @@ using ICSharpCode.SharpZipLib;
 using ICSharpCode.SharpZipLib.Zip;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using ICSharpCode.SharpZipLib.Zip.Compression;
+using ICSharpCode.SharpZipLib.Checksums;
 using ICSharpCode.SharpZipLib.BZip2;
 using System.Collections;
 using System.IO;
 using System.Text;
-
-using ICSharpCode.SharpZipLib.Checksums;
 
 namespace RemoteZip
 {
@@ -216,7 +215,7 @@ namespace RemoteZip
 			while(true)
 			{
 				HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-				req.AddRange(-(currentLength+22));
+				req.AddRange(-(currentLength + 22));
 				HttpWebResponse res = (HttpWebResponse)req.GetResponse();
 
 				// copy the buffer because we need a back seekable buffer

@@ -41,6 +41,43 @@ namespace iKGD
 							FileStream output = new FileStream(LocalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 							CopyStream(file.GetInputStream(current), output);
 							output.Close();
+							Utils.Delay(1);
+							break;
+						}
+					}
+					if (enumerator is IDisposable) (enumerator as IDisposable).Dispose();
+				}
+				catch (Exception e)
+				{
+					if (iKGD.Verbose) Console.Error.WriteLine(e);
+				}
+			}
+		}
+
+		public static void DownloadFileFromZip(string ZipURL, string[] FilePathInZip, string[] LocalPath)
+		{
+			RemoteZipFile file = new RemoteZipFile();
+			if (file.Load(ZipURL))
+			{
+				try
+				{
+					IEnumerator enumerator = file.GetEnumerator();
+					for (int i = 0; i < FilePathInZip.Length; i++)
+					{
+						enumerator.Reset();
+						while (enumerator.MoveNext())
+						{
+							ZipEntry current = (ZipEntry)enumerator.Current;
+							if (current.Name == FilePathInZip[i])
+							{
+								if (iKGD.Verbose)
+									Console.WriteLine("[v]: downloading " + Path.GetFileName(FilePathInZip[i]));
+								FileStream output = new FileStream(LocalPath[i], FileMode.OpenOrCreate, FileAccess.ReadWrite);
+								CopyStream(file.GetInputStream(current), output);
+								output.Close();
+								Utils.Delay(1);
+								break;
+							}
 						}
 					}
 					if (enumerator is IDisposable) (enumerator as IDisposable).Dispose();

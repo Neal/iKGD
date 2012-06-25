@@ -50,14 +50,14 @@ namespace iKGD
 			{
 				switch (c)
 				{
-					case 'e': ExtractFullRootFS = true; break;
-					case 'v': Verbose = true; break;
 					case 'i': IPSWLocation = g.Optarg; break;
 					case 'u': IPSWurl = g.Optarg; break;
 					case 'd': ReqDevice = g.Optarg; break;
 					case 'f': ReqFirmware = g.Optarg; break;
 					case 'k': KeysDir = g.Optarg; break;
 					case 'r': RebootDevice = false; break;
+					case 'e': ExtractFullRootFS = true; break;
+					case 'v': Verbose = true; break;
 				}
 			}
 
@@ -125,26 +125,39 @@ namespace iKGD
 					FileIO.Directory_Create(IPSWdir);
 					Console.WriteLine("Firmware: " + Path.GetFileNameWithoutExtension(IPSWurl));
 					Console.Write("Downloading essential files...");
+//					string[] EssZipFiles = new string[] { "Restore.plist", "BuildManifest.plist" };
+//					string[] EssLocalPath = new string[] { IPSWdir + "Restore.plist", IPSWdir + "BuildManifest.plist" };
+//					Remote.DownloadFileFromZip(IPSWurl, EssZipFiles, EssLocalPath);
 					Remote.DownloadFileFromZip(IPSWurl, "Restore.plist", IPSWdir + "Restore.plist");
 					Remote.DownloadFileFromZip(IPSWurl, "BuildManifest.plist", IPSWdir + "BuildManifest.plist");
 					Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 					Console.WriteLine("Parsing Restore.plist");
 					Utils.ParseRestorePlist(IPSWdir + "Restore.plist");
 					Console.Write("Downloading images...");
+//					string[] FilePathInZip = new string[images.Length - 2];
+//					string[] LocalPath = new string[images.Length - 2];
+//					for (int i = 0; i < images.Length -2; i++)
+//					{
+//						string img = Utils.GetImagePathFromBuildManifest(images[i+2], IPSWdir + "BuildManifest.plist");
+//						FilePathInZip[i] = img;
+//						LocalPath[i] = IPSWdir + Path.GetFileName(img);
+//					}
+//					Remote.DownloadFileFromZip(IPSWurl, FilePathInZip, LocalPath);
 					for (int i = 2; i < images.Length; i++)
 					{
 						string img = Utils.GetImagePathFromBuildManifest(images[i], IPSWdir + "BuildManifest.plist");
 						if (Verbose) Console.WriteLine("\r[v] Downloading " + Path.GetFileName(img));
 						Remote.DownloadFileFromZip(IPSWurl, img, IPSWdir + Path.GetFileName(img));
 					}
-					Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+					if (!Verbose) Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 					Console.Write("Downloading ramdisks and root filesystem...");
+					if (Verbose) Console.WriteLine("\r[v] Downloading root filesystem");
 					Remote.DownloadFileFromZipInBackground(IPSWurl, RootFileSystem, IPSWdir + RootFileSystem, 125829120);
 					if (Verbose) Console.WriteLine("[v] Downloading update ramdisk");
 					Remote.DownloadFileFromZip(IPSWurl, UpdateRamdisk, IPSWdir + UpdateRamdisk);
 					if (Verbose) Console.WriteLine("[v] Downloading restore ramdisk");
 					Remote.DownloadFileFromZip(IPSWurl, RestoreRamdisk, IPSWdir + RestoreRamdisk);
-					Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+					if (!Verbose) Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 				}
 				catch (Exception e)
 				{
