@@ -240,20 +240,8 @@ namespace iKGD
 				Dictionary<string, object> dict = (Dictionary<string, object>)Plist.readPlist(BuildManifestPath);
 				Dictionary<string, object> BuildIdentities = (Dictionary<string, object>)((List<object>)dict["BuildIdentities"])[0];
 				Dictionary<string, object> Manifest = (Dictionary<string, object>)BuildIdentities["Manifest"];
-				Dictionary<string, object>[] manifest = new Dictionary<string, object>[iKGD.images.Length];
-				Dictionary<string, object>[] info = new Dictionary<string, object>[iKGD.images.Length];
-				for (int i = 0; i < iKGD.images.Length; i++)
-				{
-					if (Manifest.ContainsKey(iKGD.images[i]))
-					{
-						manifest[i] = (Dictionary<string, object>)Manifest[iKGD.images[i]];
-						info[i] = (Dictionary<string, object>)manifest[i]["Info"];
-						if (iKGD.images[i].ToLower() == image.ToLower())
-						{
-							return (string)info[i]["Path"];
-						}
-					}
-				}
+				if (Manifest.ContainsKey(image))
+					return (string)((Dictionary<string, object>)((Dictionary<string, object>)Manifest[image])["Info"])["Path"];
 			}
 			catch (Exception) { }
 			return "";
