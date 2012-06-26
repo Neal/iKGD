@@ -322,30 +322,35 @@ namespace iKGD
 			Console.Write("Getting baseband...");
 			try
 			{
-				if (Device.Contains("iPhone3,1"))
+				switch (Device)
 				{
-					BasebandExists = true;
-					string[] basebands = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Split(new string[] { "_" }, StringSplitOptions.None);
-					Baseband = basebands[1];
-				}
-				else if (Device.Contains("iPhone3,3"))
-				{
-					BasebandExists = true;
-					Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Replace(".Release.bbfw", "").Replace("Phoenix-", "");
-				}
-				else if (Device.Contains("iPad1,1"))
-				{
-					BasebandExists = true;
-					FileIO.Directory_Create(TempDir + "bb");
-					Utils.hfsplus_extractall(TempDir + "rd2.dmg", "/usr/local/standalone/firmware/", TempDir + "bb");
-					string[] bbfw = Directory.GetFiles(TempDir + "bb", "*.bbfw");
-					Utils.UnzipAll(bbfw[0], TempDir + "bb");
-					string[] baseband = Directory.GetFiles(TempDir + "bb", "*.eep");
-					Baseband = Path.GetFileNameWithoutExtension(baseband[1]).Replace("ICE2_", "");
-					FileIO.Directory_Delete(TempDir + "bb");
+					case "iPhone3,1":
+						BasebandExists = true;
+						string[] basebands = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Split(new string[] { "_" }, StringSplitOptions.None);
+						Baseband = basebands[1];
+						break;
+
+					case "iPhone3,3":
+						BasebandExists = true;
+						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Replace(".Release.bbfw", "").Replace("Phoenix-", "");
+						break;
+
+					case "iPad1,1":
+						BasebandExists = true;
+						FileIO.Directory_Create(TempDir + "bb");
+						Utils.hfsplus_extractall(TempDir + "rd2.dmg", "/usr/local/standalone/firmware/", TempDir + "bb");
+						string[] bbfw = Directory.GetFiles(TempDir + "bb", "*.bbfw");
+						Utils.UnzipAll(bbfw[0], TempDir + "bb");
+						string[] baseband = Directory.GetFiles(TempDir + "bb", "*.eep");
+						Baseband = Path.GetFileNameWithoutExtension(baseband[1]).Replace("ICE2_", "");
+						FileIO.Directory_Delete(TempDir + "bb");
+						break;
 				}
 			}
-			catch (Exception) { }
+			catch (Exception e)
+			{
+				if (Verbose) Console.Error.WriteLine(e);
+			}
 			Utils.ConsoleWriteLine(BasebandExists && !string.IsNullOrEmpty(Baseband) ? "   [DONE]" : BasebandExists ? "   [FAILED]" : "   [No Baseband Found]", ConsoleColor.DarkGray);
 		}
 
