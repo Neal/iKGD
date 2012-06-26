@@ -33,6 +33,7 @@ namespace iKGD
 		public static bool Verbose = false;
 
 		public static string RootFileSystem, RestoreRamdisk, UpdateRamdisk = "";
+		public static string DecryptedRootFS = "DEC-RootFS.dmg", DecryptedRestoreRamdisk = "DEC-RestoreRD.dmg", DecryptedUpdateRamdisk = "DEC-UpdateRD.dmg";
 		public static bool RestoreRamdiskIsEncrypted, RestoreRamdiskExists, UpdateRamdiskIsEncrypted, UpdateRamdiskExists;
 		public static bool ExtractFullRootFS = false;
 
@@ -122,8 +123,9 @@ namespace iKGD
 			GrabKBAGS();
 
 			if (RunningRemotelyServer)
+			{
 				RemoteModeServer();
-
+			}
 			else
 			{
 				MakeDeviceReady();
@@ -215,8 +217,8 @@ namespace iKGD
 			UpdateRamdiskExists = (!string.IsNullOrEmpty(UpdateRamdisk));
 			RestoreRamdiskExists = (!string.IsNullOrEmpty(RestoreRamdisk));
 			Console.Write("Checking if ramdisks are encrypted...");
-			kbags[0] = Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + "rd2.dmg").Trim();
-			kbags[1] = Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + "rd1.dmg").Trim();
+			kbags[0] = Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + DecryptedUpdateRamdisk).Trim();
+			kbags[1] = Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + DecryptedRestoreRamdisk).Trim();
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			UpdateRamdiskIsEncrypted = (kbags[0].Length != 0) && UpdateRamdiskExists;
 			RestoreRamdiskIsEncrypted = (kbags[1].Length != 0) && RestoreRamdiskExists;
@@ -269,6 +271,7 @@ namespace iKGD
 			else
 			{
 				Console.WriteLine("Found device running iKGD payload");
+				Utils.irecovery_cmd("go fbclear");
 			}
 			irecv_fbechoikgd();
 		}
@@ -295,8 +298,8 @@ namespace iKGD
 		public static void DecryptRamdisks()
 		{
 			Console.Write("Decrypting ramdisks...");
-			if (UpdateRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + "rd2.dmg", iv[0], key[0]);
-			if (RestoreRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + "rd1.dmg", iv[1], key[1]);
+			if (UpdateRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + DecryptedUpdateRamdisk, iv[0], key[0]);
+			if (RestoreRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + DecryptedRestoreRamdisk, iv[1], key[1]);
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
@@ -305,11 +308,11 @@ namespace iKGD
 			Console.Write("Getting vfdecryptkey...");
 			try
 			{
-				string[] vf = Utils.genpass(Platform, TempDir + "rd1.dmg", IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
+				string[] vf = Utils.genpass(Platform, TempDir + DecryptedRestoreRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
 				VFDecryptKey = vf[1].Trim();
 				if (string.IsNullOrEmpty(VFDecryptKey) && UpdateRamdiskExists)
 				{
-					vf = Utils.genpass(Platform, TempDir + "rd2.dmg", IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
+					vf = Utils.genpass(Platform, TempDir + DecryptedUpdateRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
 					VFDecryptKey = vf[1].Trim();
 				}
 			}
@@ -338,7 +341,7 @@ namespace iKGD
 					case "iPad1,1":
 						BasebandExists = true;
 						FileIO.Directory_Create(TempDir + "bb");
-						Utils.hfsplus_extractall(TempDir + "rd2.dmg", "/usr/local/standalone/firmware/", TempDir + "bb");
+						Utils.hfsplus_extractall(TempDir + DecryptedUpdateRamdisk, "/usr/local/standalone/firmware/", TempDir + "bb");
 						string[] bbfw = Directory.GetFiles(TempDir + "bb", "*.bbfw");
 						Utils.UnzipAll(bbfw[0], TempDir + "bb");
 						string[] baseband = Directory.GetFiles(TempDir + "bb", "*.eep");
@@ -383,6 +386,14 @@ namespace iKGD
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", KeysDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 			}
 			Utils.ConsoleWriteLine(FileIO.File_Exists(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+
+			if (RunningRemotelyServer)
+			{
+				Console.Write("Copying keys to " + RemoteFileLocation);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
+				Utils.ConsoleWriteLine(FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+			}
 		}
 
 		public static void DecryptRootFS()
@@ -390,8 +401,8 @@ namespace iKGD
 			if (ExtractFullRootFS)
 			{
 				Console.Write("Decrypting the Root FileSystem...");
-				Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + "RootFS.dmg", VFDecryptKey);
-				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + "RootFS.dmg") != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+				Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + DecryptedRootFS, VFDecryptKey);
+				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + DecryptedRootFS) != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 			}
 		}
 
