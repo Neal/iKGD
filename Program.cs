@@ -403,15 +403,15 @@ namespace iKGD
 			Dictionary<string, object> RemoteServerDict = (Dictionary<string, object>)Plist.readPlist(RemoteFileLocation + "iKGD-RemoteServer.plist");
 			Dictionary<string, object> FirmwareInfo = (Dictionary<string, object>)RemoteServerDict["FirmwareInfo"];
 			Dictionary<string, object> KBAGS = (Dictionary<string, object>)RemoteServerDict["KBAGS"];
-			Device = FirmwareInfo.ContainsKey("Device") ? (string)FirmwareInfo["Device"] : "";
-			Firmware = FirmwareInfo.ContainsKey("Firmware") ? (string)FirmwareInfo["Firmware"] : "";
-			BuildID = FirmwareInfo.ContainsKey("BuildID") ? (string)FirmwareInfo["BuildID"] : "";
-			Platform = FirmwareInfo.ContainsKey("Platform") ? (string)FirmwareInfo["Platform"] : "";
+			Device = Utils.GetValueforKeyFromDict(FirmwareInfo, "Device");
+			Firmware = Utils.GetValueforKeyFromDict(FirmwareInfo, "Firmware");
+			BuildID = Utils.GetValueforKeyFromDict(FirmwareInfo, "BuildID");
+			Platform = Utils.GetValueforKeyFromDict(FirmwareInfo, "Platform");
 			UpdateRamdiskIsEncrypted = FirmwareInfo.ContainsKey("UpdateRamdiskEncrypted") ? (bool)FirmwareInfo["UpdateRamdiskEncrypted"] : false;
 			RestoreRamdiskIsEncrypted = FirmwareInfo.ContainsKey("RestoreRamdiskEncrypted") ? (bool)FirmwareInfo["RestoreRamdiskEncrypted"] : false;
 			for (int i = 0; i < images.Length; i++)
 			{
-				kbags[i] = KBAGS.ContainsKey(images[i]) ? (string)KBAGS[images[i]] : "";
+				kbags[i] = Utils.GetValueforKeyFromDict(KBAGS, images[i]);
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			Console.WriteLine("Checking resources...");
@@ -465,8 +465,8 @@ namespace iKGD
 			Dictionary<string, object> Keys = (Dictionary<string, object>)RemoteHomeDict["Keys"];
 			for (int i = 0; i < images.Length; i++)
 			{
-				iv[i] = IVs.ContainsKey(images[i]) ? (string)IVs[images[i]] : "";
-				key[i] = Keys.ContainsKey(images[i]) ? (string)Keys[images[i]] : "";
+				iv[i] = Utils.GetValueforKeyFromDict(IVs, images[i]);
+				key[i] = Utils.GetValueforKeyFromDict(Keys, images[i]);
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteHome.plist");

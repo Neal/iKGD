@@ -254,16 +254,21 @@ namespace iKGD
 				Dictionary<string, object> DeviceMap = (Dictionary<string, object>)((List<object>)dict["DeviceMap"])[0];
 				Dictionary<string, object> RestoreRamDisks = (Dictionary<string, object>)dict["RestoreRamDisks"];
 				Dictionary<string, object> SystemRestoreImages = (Dictionary<string, object>)dict["SystemRestoreImages"];
-				iKGD.Device = dict.ContainsKey("ProductType") ? (string)dict["ProductType"] : "";
-				iKGD.Firmware = dict.ContainsKey("ProductVersion") ? (string)dict["ProductVersion"] : "";
-				iKGD.BuildID = dict.ContainsKey("ProductBuildVersion") ? (string)dict["ProductBuildVersion"] : "";
-				iKGD.Platform = DeviceMap.ContainsKey("Platform") ? (string)DeviceMap["Platform"] : "";
-				iKGD.BoardConfig = DeviceMap.ContainsKey("BoardConfig") ? (string)DeviceMap["BoardConfig"] : "";
-				iKGD.RootFileSystem = SystemRestoreImages.ContainsKey("User") ? (string)SystemRestoreImages["User"] : "";
-				iKGD.RestoreRamdisk = RestoreRamDisks.ContainsKey("User") ? (string)RestoreRamDisks["User"] : "";
-				iKGD.UpdateRamdisk = RestoreRamDisks.ContainsKey("Update") ? (string)RestoreRamDisks["Update"] : "";
+				iKGD.Device = GetValueforKeyFromDict(dict, "ProductType");
+				iKGD.Firmware = GetValueforKeyFromDict(dict, "ProductVersion");
+				iKGD.BuildID = GetValueforKeyFromDict(dict, "ProductBuildVersion");
+				iKGD.Platform = GetValueforKeyFromDict(DeviceMap, "Platform");
+				iKGD.BoardConfig = GetValueforKeyFromDict(DeviceMap, "BoardConfig");
+				iKGD.RootFileSystem = GetValueforKeyFromDict(SystemRestoreImages, "User");
+				iKGD.RestoreRamdisk = GetValueforKeyFromDict(RestoreRamDisks, "User");
+				iKGD.UpdateRamdisk = GetValueforKeyFromDict(RestoreRamDisks, "Update");
 			}
 			catch (Exception) { }
+		}
+
+		public static string GetValueforKeyFromDict(Dictionary<string, object> dict, string key)
+		{
+			return dict.ContainsKey(key) ? (string)dict[key] : "";
 		}
 
 		public static string ExecuteCommandAndGetOutput(string command)
