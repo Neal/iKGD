@@ -64,16 +64,22 @@ namespace iKGD
 					case 'e': ExtractFullRootFS = true; break;
 					case 'S': RunningRemotelyServer = true; break;
 					case 'H': RunningRemotelyHome = true; break;
+					case 'R': RemoteFileLocation = g.Optarg; break;
 					case 'v': Verbose = true; break;
 				}
 			}
 
 
-			if (RunningRemotelyHome)
+			if (RunningRemotelyHome || RunningRemotelyServer)
 			{
-				RemoteModeHome();
+				if (!FileIO.Directory_Exists(RemoteFileLocation))
+				{
+					Console.WriteLine("Directory {0} does not exist!\nUse -R to manually specify a different location.", RemoteFileLocation);
+					Environment.Exit((int)ExitCode.InvalidRemoteFileLocation);
+				}
+				if (RunningRemotelyHome) RemoteModeHome();
 			}
-			else if (!string.IsNullOrEmpty(IPSWLocation))
+			if (!string.IsNullOrEmpty(IPSWLocation))
 			{
 				if (!FileIO.File_Exists(IPSWLocation))
 				{
@@ -495,6 +501,7 @@ namespace iKGD
 			Console.WriteLine("  -k <keysdir>          Path to dir to store keys (default \"{0}\"", KeysDir);
 			Console.WriteLine("  -S                    Running on server (also run -H at home)");
 			Console.WriteLine("  -H                    Use with -S to get keys from home");
+			Console.WriteLine("  -R                    Manually specify dir used by Remote mode (-S or -H)");
 			Console.WriteLine("  -e                    Extract full root filesystem (only with -i)");
 			Console.WriteLine("  -r                    Don't reboot device.");
 			Console.WriteLine("  -v                    Verbose");
@@ -543,6 +550,7 @@ namespace iKGD
 			IncompatibleDevice = 4,
 			PlatformNotSame = 5,
 			URLisNotFirmware = 6,
+			InvalidRemoteFileLocation = 7,
 			UnknownError = 10
 		}
 	}
