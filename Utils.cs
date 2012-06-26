@@ -391,7 +391,7 @@ namespace iKGD
 			FirmwareKeys.Add("LLB", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("LLB", iKGD.IPSWdir + "BuildManifest.plist") }, { "IV", iKGD.iv[16] }, { "Key", iKGD.key[16] } });
 			FirmwareKeys.Add("iBEC", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBEC", iKGD.IPSWdir + "BuildManifest.plist") }, { "IV", iKGD.iv[11] }, { "Key", iKGD.key[11] } });
 			FirmwareKeys.Add("KernelCache", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("KernelCache", iKGD.IPSWdir + "BuildManifest.plist") }, { "IV", iKGD.iv[14] }, { "Key", iKGD.key[14] } });
-			FirmwareKeys.Add("FileSystem", new Dictionary<string, object> { { "VFDecryptKey", iKGD.VFDecryptKey }, { "FileName", GetImagePathFromBuildManifest("FileSystem", iKGD.IPSWdir + "BuildManifest.plist") } });
+			FirmwareKeys.Add("FileSystem", new Dictionary<string, object> { { "VFDecryptKey", iKGD.VFDecryptKey }, { "FileName", GetImagePathFromBuildManifest("OS", iKGD.IPSWdir + "BuildManifest.plist") } });
 			FirmwareKeys.Add("AppleLogo", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("AppleLogo", iKGD.IPSWdir + "BuildManifest.plist") }, { "IV", iKGD.iv[2] }, { "Key", iKGD.key[2] } });
 			if (iKGD.UpdateRamdiskExists)
 				FirmwareKeys.Add("UpdateRamdisk", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("UpdateRamdisk", iKGD.IPSWdir + "BuildManifest.plist") }, { "IV", iKGD.iv[0] }, { "Key", iKGD.key[0] } });
