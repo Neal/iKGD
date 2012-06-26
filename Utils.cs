@@ -114,15 +114,15 @@ namespace iKGD
 
 		public static string dmg_extract(string _in, string _out, string key)
 		{
-			return ExecuteCommandAndGetOutput(iKGD.Resources + "dmg.exe extract \"" + _in + "\" " + _out + " -k \"" + key + "\"");
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "dmg.exe extract \"" + _in + "\" \"" + _out + "\" -k \"" + key + "\"");
 		}
 		public static string genpass(string platform, string ramdisk, string filesystem)
 		{
-			return ExecuteCommandAndGetOutput(iKGD.Resources + "genpass.exe -p " + platform + " -r " + ramdisk + " -f " + filesystem);
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "genpass.exe -p \"" + platform + "\" -r \"" + ramdisk + "\" -f \"" + filesystem + "\"");
 		}
 		public static string hfsplus_extractall(string image, string path, string dest)
 		{
-			return ExecuteCommandAndGetOutput(iKGD.Resources + "hfsplus.exe \"" + image + "\" extractall " + path + " \"" + dest + "\"");
+			return ExecuteCommandAndGetOutput(iKGD.Resources + "hfsplus.exe \"" + image + "\" extractall \"" + path + "\" \"" + dest + "\"");
 		}
 		public static string irecovery(string cmd)
 		{
