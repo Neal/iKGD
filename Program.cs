@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Reflection;
 using System.Text;
@@ -27,18 +28,15 @@ namespace iKGD
 			File.ReadAllLines(DropboxHostDBFilePath)[1])) + "\\" : Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\iKGD\\";
 		public static string RemoteFileLocation = DropboxDir + "share\\";
 
-		public static string IPSWLocation, IPSWurl, ReqDevice, ReqFirmware = "";
-		public static bool RunningRemotelyServer = false;
-		public static bool RunningRemotelyHome = false;
+		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, FirmwareIsBeta = false;
 		public static bool RebootDevice = true;
 		public static bool Verbose = false;
 
-		public static string RootFileSystem, RestoreRamdisk, UpdateRamdisk = "";
+		public static string IPSWLocation = "", IPSWurl = "", ReqDevice = "", ReqFirmware = "", RootFileSystem = "", RestoreRamdisk = "", UpdateRamdisk = "";
 		public static string DecryptedRootFS = "DEC-RootFS.dmg", DecryptedRestoreRamdisk = "DEC-RestoreRD.dmg", DecryptedUpdateRamdisk = "DEC-UpdateRD.dmg";
-		public static bool RestoreRamdiskIsEncrypted, RestoreRamdiskExists, UpdateRamdiskIsEncrypted, UpdateRamdiskExists;
-		public static bool ExtractFullRootFS = false;
+		public static bool RestoreRamdiskIsEncrypted, RestoreRamdiskExists, UpdateRamdiskIsEncrypted, UpdateRamdiskExists, ExtractFullRootFS = false;
 
-		public static string Device, Firmware, BuildID, Codename, Platform, BoardConfig, PluggedInDevice, DownloadURL, VFDecryptKey, Baseband = "";
+		public static string Device, Firmware, BuildID, Codename, Platform, BoardConfig, PluggedInDevice, VFDecryptKey, DownloadURL = "", Baseband = "";
 		public static bool BasebandExists = false;
 
 		public enum FirmwareItems : int
@@ -61,6 +59,7 @@ namespace iKGD
 			LLB = 15,
 			RecoveryMode = 16
 		}
+
 		public static int TotalFirmwareItems = Enum.GetValues(typeof(FirmwareItems)).Length;
 		public static string[] FirmwareItem = Enum.GetNames(typeof(FirmwareItems));
 		public static string[] kbag = new string[TotalFirmwareItems];
@@ -73,7 +72,7 @@ namespace iKGD
 
 			char c;
 			XGetopt g = new XGetopt();
-			while ((c = g.Getopt(args.Length, args, "evi:u:d:f:rSH")) != '\0')
+			while ((c = g.Getopt(args.Length, args, "evi:u:d:f:rSHK")) != '\0')
 			{
 				switch (c)
 				{
@@ -87,6 +86,7 @@ namespace iKGD
 					case 'S': RunningRemotelyServer = true; break;
 					case 'H': RunningRemotelyHome = true; break;
 					case 'R': RemoteFileLocation = g.Optarg; break;
+					case 'K': KeepRemoteFiles = true; break;
 					case 'v': Verbose = true; break;
 				}
 			}
@@ -284,20 +284,26 @@ namespace iKGD
 				Console.WriteLine("Waiting for device in DFU mode...   [Found {0}]", PluggedInDevice);
 				if (!Utils.DeviceIsCompatible(PluggedInDevice))
 				{
+					if (string.IsNullOrEmpty(PluggedInDevice)) PluggedInDevice = "The device you plugged in ";
 					Console.WriteLine("\nERROR: {0} is not compatible with iKGD yet!\n", PluggedInDevice);
 					Environment.Exit((int)ExitCode.IncompatibleDevice);
 				}
 				if ((Utils.irecovery("-platform").Trim() != Platform) && (!string.IsNullOrEmpty(Platform)))
 				{
 					Console.WriteLine("\nERROR: Plugged in device is not the same platform as the ipsw!");
-					Console.Write("\nYou plugged in a {0} while you're", Utils.irecovery("-platform").Trim());
-					Console.Write("\ntrying to get keys for " + Platform + ".\n\n");
+					Console.WriteLine("\nYou plugged in a {0} while you're trying to get keys for {1}.\n", Utils.irecovery("-platform").Trim(), Platform);
 					Environment.Exit((int)ExitCode.PlatformNotSame);
 				}
 				Utils.PwnDevice(PluggedInDevice);
 			}
 			else
 			{
+				if ((Utils.irecovery("-platform").Trim() != Platform) && (!string.IsNullOrEmpty(Platform)))
+				{
+					Console.WriteLine("\nERROR: Plugged in device is not the same platform as the ipsw!");
+					Console.WriteLine("\nYou plugged in a {0} while you're trying to get keys for {1}.\n", Utils.irecovery("-platform").Trim(), Platform);
+					Environment.Exit((int)ExitCode.PlatformNotSame);
+				}
 				Console.WriteLine("Found device running iKGD payload");
 				Utils.irecovery_cmd("go fbclear");
 			}
@@ -332,14 +338,14 @@ namespace iKGD
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
-		public static void GetVFDecryptKey()
+		public static void GetVFDecryptKey(bool UseUpdateRamdisk = false)
 		{
 			Console.Write("Getting vfdecryptkey...");
 			try
 			{
 				string[] vf = Utils.genpass(Platform, TempDir + DecryptedRestoreRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
 				VFDecryptKey = vf[1].Trim();
-				if (string.IsNullOrEmpty(VFDecryptKey) && UpdateRamdiskExists)
+				if ((UseUpdateRamdisk || string.IsNullOrEmpty(VFDecryptKey)) && UpdateRamdiskExists)
 				{
 					vf = Utils.genpass(Platform, TempDir + DecryptedUpdateRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
 					VFDecryptKey = vf[1].Trim();
@@ -358,15 +364,14 @@ namespace iKGD
 				{
 					case "iPhone2,1":
 						BasebandExists = true;
-						FileIO.Directory_Create(TempDir + "bb");
 						if (!string.IsNullOrEmpty(IPSWLocation))
-							Utils.UnzipFile(IPSWLocation, IPSWdir, "Firmware\\ICE2.Release.bbfw");
+							Utils.UnzipFile(IPSWLocation, IPSWdir, @"Firmware/ICE2.Release.bbfw");
 						else if (!string.IsNullOrEmpty(IPSWurl))
-							Remote.DownloadFileFromZip(IPSWurl, "Firmware\\ICE2.Release.bbfw", IPSWdir + "ICE2.Release.bbfw");
-						Utils.UnzipAll(IPSWdir + "ICE2.Release.bbfw", TempDir + "bb");
-						string[] baseband = Directory.GetFiles(TempDir + "bb", "*.eep");
-						Baseband = Path.GetFileNameWithoutExtension(baseband[1]).Replace("ICE2_", "");
-						FileIO.Directory_Delete(TempDir + "bb");
+							Remote.DownloadFileFromZip(IPSWurl, @"Firmware/ICE2.Release.bbfw", IPSWdir + "ICE2.Release.bbfw");
+						ZipStorer zip = ZipStorer.Open(IPSWdir + "ICE2.Release.bbfw", FileAccess.Read);
+						List<ZipStorer.ZipFileEntry> aaa = (List<ZipStorer.ZipFileEntry>)zip.ReadCentralDir();
+						Baseband = Path.GetFileNameWithoutExtension(((List<ZipStorer.ZipFileEntry>)zip.ReadCentralDir())[0].FilenameInZip).Replace("ICE2_", "");
+						zip.Close();
 						break;
 
 					case "iPhone3,1":
@@ -401,9 +406,15 @@ namespace iKGD
 
 		public static void FetchFirmwareURL()
 		{
+			Codename = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "BuildTrain");
+			FirmwareIsBeta = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "Variant").Contains("Developer");
+			if (FirmwareIsBeta)
+			{
+				Console.WriteLine("Firmware {0} is a beta firmware, can not fetch url for it.", BuildID);
+				return;
+			}
 			Console.WriteLine("Fetching url for " + Device + " and " + BuildID);
 			DownloadURL = Utils.GetFirmwareURL(Device, BuildID);
-			Codename = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "BuildTrain");
 			if (string.IsNullOrEmpty(DownloadURL))
 				Console.WriteLine("Unable to find url. Perhaps " + BuildID + " is a beta firmware?");
 		}
@@ -444,6 +455,11 @@ namespace iKGD
 			{
 				Console.Write("Decrypting the Root FileSystem...");
 				Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + DecryptedRootFS, VFDecryptKey);
+				if (Utils.GetFileSizeOnDisk(TempDir + DecryptedRootFS) == 0)
+				{
+					GetVFDecryptKey(true);
+					Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + DecryptedRootFS, VFDecryptKey);
+				}
 				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + DecryptedRootFS) != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 			}
 		}
@@ -490,8 +506,11 @@ namespace iKGD
 
 		public static void RemoteModeServer()
 		{
-			FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteHome.plist");
-			FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteServer.plist");
+			if (!KeepRemoteFiles)
+			{
+				FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteHome.plist");
+				FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteServer.plist");
+			}
 			Dictionary<string, object> RemoteServerDict = new Dictionary<string, object>();
 			Dictionary<string, object> KBAGS = new Dictionary<string, object>();
 			Dictionary<string, object> FirmwareInfo = new Dictionary<string, object>();
@@ -521,9 +540,12 @@ namespace iKGD
 				iv[i] = Utils.GetValueByKey(IVs, FirmwareItem[i]);
 				key[i] = Utils.GetValueByKey(Keys, FirmwareItem[i]);
 			}
+			if (!KeepRemoteFiles)
+			{
+				FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteHome.plist");
+				FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteServer.plist");
+			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
-			FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteHome.plist");
-			FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteServer.plist");
 		}
 
 		private static void PrintUsage(string CurrentProcessName)

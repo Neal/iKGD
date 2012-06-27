@@ -56,16 +56,16 @@ namespace iKGD
 		{
 			Console.Write("Exploiting device with limera1n...");
 			irecovery("-e");
-			Delay(1);
 			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
 			{
 				Console.Write("\nDownloading iBSS for " + board + "...");
 				Remote.DownloadImage("iBSS", board, iKGD.TempDir + board + ".iBSS");
 			}
+			else Delay(1);
 			Console.Write("\nUploading iBSS...");
 			irecovery_file(iKGD.TempDir + board + ".iBSS");
 			Console.Write("\nWaiting for iBSS...");
-			while (!SearchDeviceInMode("iBoot")) { }; Delay(1);
+			while (!SearchDeviceInMode("iBoot")) { };
 			Console.Write("\nUploading iKGD iBSS payload...");
 			irecovery_file(iKGD.Resources + board + ".ibss.payload");
 			Console.WriteLine("\nExecuting iKGD iBSS payload...");
@@ -164,6 +164,7 @@ namespace iKGD
 					if (entry.FilenameInZip == FileInZip)
 					{
 						zip.ExtractFile(entry, TargetDir + Path.GetFileName(FileInZip), BytesToExtract);
+						break;
 					}
 				}
 				zip.Close();
