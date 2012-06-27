@@ -534,11 +534,11 @@ namespace iKGD
 			Utils.irecovery_fbecho("________i::::::i_____K:::::::K____K:::::K__________GGG::::::GGG:::G_______D::::::::::::DDD______________");
 			Utils.irecovery_fbecho("________iiiiiiii_____KKKKKKKKK____KKKKKKK_____________GGGGGG___GGGG_______DDDDDDDDDDDDD_________________");
 			Utils.irecovery_fbecho("--------------------------------------------------------------------------------------------------------");
-			Utils.irecovery_fbecho("--------------------------------------------------------------------------------------------------------");
+			Utils.irecovery_fbecho("========================================================================================================");
 			Utils.irecovery_fbecho(":: iKGD v" + Version + " initialized!");
-			Utils.irecovery_fbecho("-------------------------------------");
+			Utils.irecovery_fbecho("=====================================");
 			Utils.irecovery_fbecho(":: " + Device + " - iOS " + Firmware + " [" + BuildID + "]");
-			Utils.irecovery_fbecho("-------------------------------------");
+			Utils.irecovery_fbecho("=====================================");
 		}
 
 		enum ExitCode : int
