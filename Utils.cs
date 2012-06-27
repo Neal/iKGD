@@ -367,6 +367,8 @@ namespace iKGD
 			SearchAndReplace(fileLocation, "BatteryChargingKey  =", "GlyphChargingKey    =");
 			SearchAndReplace(fileLocation, "BatteryPluginIV     =", "GlyphPluginIV       =");
 			SearchAndReplace(fileLocation, "BatteryPluginKey    =", "GlyphPluginKey      =");
+			SearchAndReplace(fileLocation, "KernelCacheIV       =", "KernelcacheIV       =");
+			SearchAndReplace(fileLocation, "KernelCacheKey      =", "KernelcacheKey      =");
 		}
 
 		public static void MakeOpensn0wPlist(string fileLocation)
