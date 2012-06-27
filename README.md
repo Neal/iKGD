@@ -11,6 +11,7 @@ A fully automated tool to grab AES keys for iOS firmwares. iKGD takes about 25 s
 	  -k <keysdir>          Path to dir to store keys (default "C:\IPSW\Keys\")
 	  -S                    Running on server (also run -H at home)
 	  -H                    Use with -S to get keys from home
+	  -R                    Manually specify dir used by Remote mode (-S or -H)
 	  -e                    Extract full root filesystem (only with -i)
 	  -r                    Don't reboot device.
 	  -v                    Verbose
@@ -19,6 +20,15 @@ A fully automated tool to grab AES keys for iOS firmwares. iKGD takes about 25 s
 + Use `-u` if you have a link to the firmware you want to download files from. (about 20-25MB)
 + Use `-d` and `-f` and fetch the url from Firmware Links API and continue what `-u` would do.
 + `-S` and `-H` are used when you have the ipsw on a remote server and device on the other.
+
+<pre>
+The RemoteServer mode allows you to run iKGD on a remote server while still use your home pc to get the keys. Use -S 
+on the server and it'll make a plist for the home pc with the kbags. Copy that to the home pc and use -H at home and 
+it will make a plist with keys for the server. Once the server finds the plist, it'll continue like it was running 
+locally! :) Still takes only 50 seconds for everything (mainly because Dropbox takes time to sync) :P
+I use Dropbox to automatically sync the plists. You can also do it manually (see -R).
+All of it just works!
+</pre>
 
 ### Credits
 
