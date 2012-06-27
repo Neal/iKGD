@@ -22,8 +22,9 @@ namespace iKGD
 		public static string Resources = TempDir + @"Resources\";
 		public static string KeysDir = @"C:\IPSW\Keys\";
 		public static string CurrentProcessName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
-		public static string DropboxDir = ASCIIEncoding.ASCII.GetString(Convert.FromBase64String(
-			File.ReadAllLines(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dropbox\\host.db"))[1])) + "\\";
+		public static string DropboxHostDBFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dropbox\\host.db");
+		public static string DropboxDir = (FileIO.File_Exists(DropboxHostDBFilePath)) ? ASCIIEncoding.ASCII.GetString(Convert.FromBase64String(
+			File.ReadAllLines(DropboxHostDBFilePath)[1])) + "\\" : Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\iKGD\\";
 		public static string RemoteFileLocation = DropboxDir + "share\\";
 
 		public static string IPSWLocation, IPSWurl, ReqDevice, ReqFirmware = "";
@@ -40,10 +41,31 @@ namespace iKGD
 		public static string Device, Firmware, BuildID, Codename, Platform, BoardConfig, PluggedInDevice, DownloadURL, VFDecryptKey, Baseband = "";
 		public static bool BasebandExists = false;
 
-		public static string[] images = new string[] { "UpdateRamdisk", "RestoreRamdisk", "AppleLogo", "BatteryCharging0", "BatteryCharging1", "BatteryFull", "BatteryLow0", "BatteryLow1", "DeviceTree", "BatteryCharging", "BatteryPlugin", "iBEC", "iBoot", "iBSS", "KernelCache", "LLB", "RecoveryMode" };
-		public static string[] kbags = new string[images.Length];
-		public static string[] iv = new string[images.Length];
-		public static string[] key = new string[images.Length];
+		public enum FirmwareItems : int
+		{
+			UpdateRamdisk = 0,
+			RestoreRamdisk = 1,
+			AppleLogo = 2,
+			BatteryCharging0 = 3,
+			BatteryCharging1 = 4,
+			BatteryFull = 5,
+			BatteryLow0 = 6,
+			BatteryLow1 = 7,
+			DeviceTree = 8,
+			BatteryCharging = 9,
+			BatteryPlugin = 10,
+			iBEC = 11,
+			iBoot = 12,
+			iBSS = 13,
+			KernelCache = 14,
+			LLB = 15,
+			RecoveryMode = 16
+		}
+		public static int TotalFirmwareItems = Enum.GetValues(typeof(FirmwareItems)).Length;
+		public static string[] FirmwareItem = Enum.GetNames(typeof(FirmwareItems));
+		public static string[] kbag = new string[TotalFirmwareItems];
+		public static string[] iv = new string[TotalFirmwareItems];
+		public static string[] key = new string[TotalFirmwareItems];
 
 		static void Main(string[] args)
 		{
@@ -170,9 +192,9 @@ namespace iKGD
 			Utils.ParseRestorePlist(IPSWdir + "Restore.plist");
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			Console.Write("Extracting images...");
-			for (int i = 2; i < images.Length; i++)
+			for (int i = (int)FirmwareItems.AppleLogo; i < TotalFirmwareItems; i++)
 			{
-				Utils.UnzipFile(IPSWLocation, IPSWdir, Utils.GetImagePathFromBuildManifest(images[i], IPSWdir + "BuildManifest.plist"));
+				Utils.UnzipFile(IPSWLocation, IPSWdir, Utils.GetImagePathFromBuildManifest(FirmwareItem[i], IPSWdir + "BuildManifest.plist"));
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			Console.Write("Extracting ramdisks and root filesystem...");
@@ -196,9 +218,9 @@ namespace iKGD
 				Console.WriteLine("Parsing Restore.plist");
 				Utils.ParseRestorePlist(IPSWdir + "Restore.plist");
 				Console.Write("Downloading images...");
-				for (int i = 2; i < images.Length; i++)
+				for (int i = (int)FirmwareItems.AppleLogo; i < TotalFirmwareItems; i++)
 				{
-					string img = Utils.GetImagePathFromBuildManifest(images[i], IPSWdir + "BuildManifest.plist");
+					string img = Utils.GetImagePathFromBuildManifest(FirmwareItem[i], IPSWdir + "BuildManifest.plist");
 					if (Verbose) Console.WriteLine("\r[v] Downloading " + Path.GetFileName(img));
 					Remote.DownloadFileFromZip(IPSWurl, img, IPSWdir + Path.GetFileName(img));
 				}
@@ -223,11 +245,11 @@ namespace iKGD
 			UpdateRamdiskExists = (!string.IsNullOrEmpty(UpdateRamdisk));
 			RestoreRamdiskExists = (!string.IsNullOrEmpty(RestoreRamdisk));
 			Console.Write("Checking if ramdisks are encrypted...");
-			kbags[0] = Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + DecryptedUpdateRamdisk).Trim();
-			kbags[1] = Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + DecryptedRestoreRamdisk).Trim();
+			kbag[(int)FirmwareItems.UpdateRamdisk] = Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + DecryptedUpdateRamdisk).Trim();
+			kbag[(int)FirmwareItems.RestoreRamdisk] = Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + DecryptedRestoreRamdisk).Trim();
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
-			UpdateRamdiskIsEncrypted = (kbags[0].Length != 0) && UpdateRamdiskExists;
-			RestoreRamdiskIsEncrypted = (kbags[1].Length != 0) && RestoreRamdiskExists;
+			UpdateRamdiskIsEncrypted = (kbag[(int)FirmwareItems.UpdateRamdisk].Length != 0) && UpdateRamdiskExists;
+			RestoreRamdiskIsEncrypted = (kbag[(int)FirmwareItems.RestoreRamdisk].Length != 0) && RestoreRamdiskExists;
 			Console.WriteLine("Update ramdisk: " + (UpdateRamdiskExists ? (UpdateRamdiskIsEncrypted ? "encrypted" : "decrypted") : "not found"));
 			Console.WriteLine("Restore ramdisk: " + (RestoreRamdiskExists ? (RestoreRamdiskIsEncrypted ? "encrypted" : "decrypted") : "not found"));
 		}
@@ -235,10 +257,10 @@ namespace iKGD
 		public static void GrabKBAGS()
 		{
 			Console.Write("Grabbing kbags...");
-			for (int i = 2; i < images.Length; i++)
+			for (int i = (int)FirmwareItems.AppleLogo; i < TotalFirmwareItems; i++)
 			{
-				string kbagStr = Utils.xpwntool(IPSWdir + Path.GetFileName(Utils.GetImagePathFromBuildManifest(images[i], IPSWdir + "BuildManifest.plist")), "/dev/null");
-				kbags[i] = kbagStr.Substring(0, kbagStr.IndexOf(Environment.NewLine));
+				string kbagStr = Utils.xpwntool(IPSWdir + Path.GetFileName(Utils.GetImagePathFromBuildManifest(FirmwareItem[i], IPSWdir + "BuildManifest.plist")), "/dev/null");
+				kbag[i] = kbagStr.Substring(0, kbagStr.IndexOf(Environment.NewLine));
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
@@ -285,12 +307,13 @@ namespace iKGD
 		public static void GrabKeys()
 		{
 			Console.Write("Grabbing keys...");
-			for (int i = 0; i < images.Length; i++)
+			for (int i = (int)FirmwareItems.UpdateRamdisk; i < TotalFirmwareItems; i++)
 			{
-				if ((RestoreRamdiskIsEncrypted && i == 1) || (UpdateRamdiskIsEncrypted && i == 0) || (i > 1))
+				if ((UpdateRamdiskIsEncrypted && i == (int)FirmwareItems.UpdateRamdisk) || 
+					(RestoreRamdiskIsEncrypted && i == (int)FirmwareItems.RestoreRamdisk) || (i >= (int)FirmwareItems.AppleLogo))
 				{
-					Utils.irecovery_fbecho(images[i]);
-					Utils.irecovery_cmd("go aes dec " + kbags[i]);
+					Utils.irecovery_fbecho(FirmwareItem[i]);
+					Utils.irecovery_cmd("go aes dec " + kbag[i]);
 					iv[i] = Utils.irecovery_getenv("iv").Trim();
 					key[i] = Utils.irecovery_getenv("key").Trim();
 					Utils.irecovery_fbecho("IV: " + iv[i]);
@@ -304,8 +327,8 @@ namespace iKGD
 		public static void DecryptRamdisks()
 		{
 			Console.Write("Decrypting ramdisks...");
-			if (UpdateRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + DecryptedUpdateRamdisk, iv[0], key[0]);
-			if (RestoreRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + DecryptedRestoreRamdisk, iv[1], key[1]);
+			if (UpdateRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + UpdateRamdisk, TempDir + DecryptedUpdateRamdisk, iv[(int)FirmwareItems.UpdateRamdisk], key[(int)FirmwareItems.UpdateRamdisk]);
+			if (RestoreRamdiskIsEncrypted) Utils.xpwntool(IPSWdir + RestoreRamdisk, TempDir + DecryptedRestoreRamdisk, iv[(int)FirmwareItems.RestoreRamdisk], key[(int)FirmwareItems.RestoreRamdisk]);
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
@@ -333,6 +356,19 @@ namespace iKGD
 			{
 				switch (Device)
 				{
+					case "iPhone2,1":
+						BasebandExists = true;
+						FileIO.Directory_Create(TempDir + "bb");
+						if (!string.IsNullOrEmpty(IPSWLocation))
+							Utils.UnzipFile(IPSWLocation, IPSWdir, "Firmware\\ICE2.Release.bbfw");
+						else if (!string.IsNullOrEmpty(IPSWurl))
+							Remote.DownloadFileFromZip(IPSWurl, "Firmware\\ICE2.Release.bbfw", IPSWdir + "ICE2.Release.bbfw");
+						Utils.UnzipAll(IPSWdir + "ICE2.Release.bbfw", TempDir + "bb");
+						string[] baseband = Directory.GetFiles(TempDir + "bb", "*.eep");
+						Baseband = Path.GetFileNameWithoutExtension(baseband[1]).Replace("ICE2_", "");
+						FileIO.Directory_Delete(TempDir + "bb");
+						break;
+
 					case "iPhone3,1":
 						BasebandExists = true;
 						string[] basebands = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Split(new string[] { "_" }, StringSplitOptions.None);
@@ -350,8 +386,8 @@ namespace iKGD
 						Utils.hfsplus_extractall(TempDir + DecryptedUpdateRamdisk, "/usr/local/standalone/firmware/", TempDir + "bb");
 						string[] bbfw = Directory.GetFiles(TempDir + "bb", "*.bbfw");
 						Utils.UnzipAll(bbfw[0], TempDir + "bb");
-						string[] baseband = Directory.GetFiles(TempDir + "bb", "*.eep");
-						Baseband = Path.GetFileNameWithoutExtension(baseband[1]).Replace("ICE2_", "");
+						string[] basebandss = Directory.GetFiles(TempDir + "bb", "*.eep");
+						Baseband = Path.GetFileNameWithoutExtension(basebandss[1]).Replace("ICE2_", "");
 						FileIO.Directory_Delete(TempDir + "bb");
 						break;
 				}
@@ -367,7 +403,7 @@ namespace iKGD
 		{
 			Console.WriteLine("Fetching url for " + Device + " and " + BuildID);
 			DownloadURL = Utils.GetFirmwareURL(Device, BuildID);
-			Codename = Utils.ParseBuildManifestInfo("BuildTrain", IPSWdir + "BuildManifest.plist");
+			Codename = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "BuildTrain");
 			if (string.IsNullOrEmpty(DownloadURL))
 				Console.WriteLine("Unable to find url. Perhaps " + BuildID + " is a beta firmware?");
 		}
@@ -420,15 +456,15 @@ namespace iKGD
 			Dictionary<string, object> RemoteServerDict = (Dictionary<string, object>)Plist.readPlist(RemoteFileLocation + "iKGD-RemoteServer.plist");
 			Dictionary<string, object> FirmwareInfo = (Dictionary<string, object>)RemoteServerDict["FirmwareInfo"];
 			Dictionary<string, object> KBAGS = (Dictionary<string, object>)RemoteServerDict["KBAGS"];
-			Device = Utils.GetValueforKeyFromDict(FirmwareInfo, "Device");
-			Firmware = Utils.GetValueforKeyFromDict(FirmwareInfo, "Firmware");
-			BuildID = Utils.GetValueforKeyFromDict(FirmwareInfo, "BuildID");
-			Platform = Utils.GetValueforKeyFromDict(FirmwareInfo, "Platform");
+			Device = Utils.GetValueByKey(FirmwareInfo, "Device");
+			Firmware = Utils.GetValueByKey(FirmwareInfo, "Firmware");
+			BuildID = Utils.GetValueByKey(FirmwareInfo, "BuildID");
+			Platform = Utils.GetValueByKey(FirmwareInfo, "Platform");
 			UpdateRamdiskIsEncrypted = FirmwareInfo.ContainsKey("UpdateRamdiskEncrypted") ? (bool)FirmwareInfo["UpdateRamdiskEncrypted"] : false;
 			RestoreRamdiskIsEncrypted = FirmwareInfo.ContainsKey("RestoreRamdiskEncrypted") ? (bool)FirmwareInfo["RestoreRamdiskEncrypted"] : false;
-			for (int i = 0; i < images.Length; i++)
+			for (int i = (int)FirmwareItems.UpdateRamdisk; i < TotalFirmwareItems; i++)
 			{
-				kbags[i] = Utils.GetValueforKeyFromDict(KBAGS, images[i]);
+				kbag[i] = Utils.GetValueByKey(KBAGS, FirmwareItem[i]);
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			Console.WriteLine("Checking resources...");
@@ -439,10 +475,10 @@ namespace iKGD
 			Dictionary<string, object> RemoteHomeDict = new Dictionary<string, object>();
 			Dictionary<string, object> IVs = new Dictionary<string, object>();
 			Dictionary<string, object> Keys = new Dictionary<string, object>();
-			for (int i = 0; i < images.Length; i++)
+			for (int i = (int)FirmwareItems.UpdateRamdisk; i < TotalFirmwareItems; i++)
 			{
-				IVs.Add(images[i], iv[i]);
-				Keys.Add(images[i], key[i]);
+				IVs.Add(FirmwareItem[i], iv[i]);
+				Keys.Add(FirmwareItem[i], key[i]);
 			}
 			RemoteHomeDict.Add("FirmwareInfo", FirmwareInfo);
 			RemoteHomeDict.Add("IVs", IVs);
@@ -465,11 +501,11 @@ namespace iKGD
 			FirmwareInfo.Add("Platform", Platform);
 			FirmwareInfo.Add("UpdateRamdiskEncrypted", UpdateRamdiskIsEncrypted);
 			FirmwareInfo.Add("RestoreRamdiskEncrypted", RestoreRamdiskIsEncrypted);
-			if (UpdateRamdiskIsEncrypted) KBAGS.Add(images[0], kbags[0]);
-			if (RestoreRamdiskIsEncrypted) KBAGS.Add(images[1], kbags[1]);
-			for (int i = 2; i < images.Length; i++)
+			if (UpdateRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[0], kbag[0]);
+			if (RestoreRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[1], kbag[1]);
+			for (int i = 2; i < TotalFirmwareItems; i++)
 			{
-				KBAGS.Add(images[i], kbags[i]);
+				KBAGS.Add(FirmwareItem[i], kbag[i]);
 			}
 			RemoteServerDict.Add("FirmwareInfo", FirmwareInfo);
 			RemoteServerDict.Add("KBAGS", KBAGS);
@@ -480,10 +516,10 @@ namespace iKGD
 			Dictionary<string, object> RemoteHomeDict = (Dictionary<string, object>)Plist.readPlist(RemoteFileLocation + "iKGD-RemoteHome.plist");
 			Dictionary<string, object> IVs = (Dictionary<string, object>)RemoteHomeDict["IVs"];
 			Dictionary<string, object> Keys = (Dictionary<string, object>)RemoteHomeDict["Keys"];
-			for (int i = 0; i < images.Length; i++)
+			for (int i = 0; i < TotalFirmwareItems; i++)
 			{
-				iv[i] = Utils.GetValueforKeyFromDict(IVs, images[i]);
-				key[i] = Utils.GetValueforKeyFromDict(Keys, images[i]);
+				iv[i] = Utils.GetValueByKey(IVs, FirmwareItem[i]);
+				key[i] = Utils.GetValueByKey(Keys, FirmwareItem[i]);
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			FileIO.File_Delete(RemoteFileLocation + "iKGD-RemoteHome.plist");

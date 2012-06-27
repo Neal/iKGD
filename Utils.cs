@@ -44,6 +44,7 @@ namespace iKGD
 			FileIO.Directory_Create(iKGD.Resources);
 			if (!FileIO.File_Exists(iKGD.Resources + "dmg.exe"))
 			{
+				FileIO.Directory_Delete(iKGD.Resources);
 				FileIO.SaveResourceToDisk("Resources.zip", iKGD.TempDir + "Resources.zip");
 				UnzipAll(iKGD.TempDir + "Resources.zip", iKGD.Resources);
 			}
@@ -212,7 +213,7 @@ namespace iKGD
 			{
 				string url = "http://api.ios.icj.me/v2/DEVICE/FWBUILD/url/dl".Replace("DEVICE", device).Replace("FWBUILD", firmwarebuild);
 				HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-				request.Timeout = 5000;
+				request.Timeout = 4000;
 				request.Method = "HEAD";
 				request.UserAgent = "iKGD/" + iKGD.Version;
 				return request.GetResponse().ResponseUri.ToString();
@@ -221,14 +222,14 @@ namespace iKGD
 			return "";
 		}
 
-		public static string ParseBuildManifestInfo(string key, string BuildManifestPath)
+		public static string ParseBuildManifestInfo(string BuildManifestPath, string Key)
 		{
 			try
 			{
 				Dictionary<string, object> dict = (Dictionary<string, object>)Plist.readPlist(BuildManifestPath);
 				Dictionary<string, object> BuildIdentities = (Dictionary<string, object>)((List<object>)dict["BuildIdentities"])[0];
 				Dictionary<string, object> Info = (Dictionary<string, object>)BuildIdentities["Info"];
-				return Info[key].ToString();
+				return Info[Key].ToString();
 			}
 			catch (Exception) { }
 			return "";
@@ -254,19 +255,19 @@ namespace iKGD
 				Dictionary<string, object> DeviceMap = (Dictionary<string, object>)((List<object>)dict["DeviceMap"])[0];
 				Dictionary<string, object> RestoreRamDisks = (Dictionary<string, object>)dict["RestoreRamDisks"];
 				Dictionary<string, object> SystemRestoreImages = (Dictionary<string, object>)dict["SystemRestoreImages"];
-				iKGD.Device = GetValueforKeyFromDict(dict, "ProductType");
-				iKGD.Firmware = GetValueforKeyFromDict(dict, "ProductVersion");
-				iKGD.BuildID = GetValueforKeyFromDict(dict, "ProductBuildVersion");
-				iKGD.Platform = GetValueforKeyFromDict(DeviceMap, "Platform");
-				iKGD.BoardConfig = GetValueforKeyFromDict(DeviceMap, "BoardConfig");
-				iKGD.RootFileSystem = GetValueforKeyFromDict(SystemRestoreImages, "User");
-				iKGD.RestoreRamdisk = GetValueforKeyFromDict(RestoreRamDisks, "User");
-				iKGD.UpdateRamdisk = GetValueforKeyFromDict(RestoreRamDisks, "Update");
+				iKGD.Device = GetValueByKey(dict, "ProductType");
+				iKGD.Firmware = GetValueByKey(dict, "ProductVersion");
+				iKGD.BuildID = GetValueByKey(dict, "ProductBuildVersion");
+				iKGD.Platform = GetValueByKey(DeviceMap, "Platform");
+				iKGD.BoardConfig = GetValueByKey(DeviceMap, "BoardConfig");
+				iKGD.RootFileSystem = GetValueByKey(SystemRestoreImages, "User");
+				iKGD.RestoreRamdisk = GetValueByKey(RestoreRamDisks, "User");
+				iKGD.UpdateRamdisk = GetValueByKey(RestoreRamDisks, "Update");
 			}
 			catch (Exception) { }
 		}
 
-		public static string GetValueforKeyFromDict(Dictionary<string, object> dict, string key)
+		public static string GetValueByKey(Dictionary<string, object> dict, string key)
 		{
 			return dict.ContainsKey(key) ? (string)dict[key] : "";
 		}
@@ -338,25 +339,23 @@ namespace iKGD
 					writer.WriteLine(" | updatedmg           = " + iKGD.UpdateRamdisk.Replace(".dmg", ""));
 					if (iKGD.UpdateRamdiskIsEncrypted)
 					{
-						writer.WriteLine(" | updateiv            = " + iKGD.iv[0]);
-						writer.WriteLine(" | updatekey           = " + iKGD.key[0]);
+						writer.WriteLine(" | updateiv            = " + iKGD.iv[(int)iKGD.FirmwareItems.UpdateRamdisk]);
+						writer.WriteLine(" | updatekey           = " + iKGD.key[(int)iKGD.FirmwareItems.UpdateRamdisk]);
 					}
 					writer.WriteLine();
 				}
 				writer.WriteLine(" | restoredmg          = " + iKGD.RestoreRamdisk.Replace(".dmg", ""));
 				if (iKGD.RestoreRamdiskIsEncrypted)
 				{
-					writer.WriteLine(" | restoreiv           = " + iKGD.iv[1]);
-					writer.WriteLine(" | restorekey          = " + iKGD.key[1]);
+					writer.WriteLine(" | restoreiv           = " + iKGD.iv[(int)iKGD.FirmwareItems.RestoreRamdisk]);
+					writer.WriteLine(" | restorekey          = " + iKGD.key[(int)iKGD.FirmwareItems.RestoreRamdisk]);
 				}
-				for (int i = 2; i < iKGD.images.Length; i++)
+				for (int i = (int)iKGD.FirmwareItems.AppleLogo; i < iKGD.TotalFirmwareItems; i++)
 				{
 					writer.WriteLine();
-					string str = iKGD.images[i] + "IV";
+					string str = iKGD.FirmwareItem[i] + "IV";
 					for (int j = 0; j < 20 - str.Length + j; j++)
-					{
 						str = str.Insert(str.Length, " ");
-					}
 					writer.WriteLine(" | " + str + "= " + iKGD.iv[i]);
 					writer.WriteLine(" | " + str.Replace("IV ", "Key") + "= " + iKGD.key[i]);
 				}
