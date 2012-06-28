@@ -93,7 +93,24 @@ namespace iKGD
 					return false;
 			}
 		}
-
+		
+		public static string GetTheiPhoneWikiDeviceName(string board)
+		{
+			switch (board)
+			{
+				case "n72ap": return "iPod_touch_2G";
+				case "n18ap": return "iPod_touch_3G";
+				case "n81ap": return "iPod_touch_4G";
+				case "n88ap": return "iPhone_3GS";
+				case "n90ap": return "iPhone_4";
+				case "n92ap": return "iPhone_4_CDMA";
+				case "k48ap": return "iPad";
+				case "k66ap": return "Apple_TV_2G";
+				default:
+					return "";
+			}
+		}
+		
 		public static bool SearchDeviceInMode(string mode, bool libirecovery = false)
 		{
 			string str = "";

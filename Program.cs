@@ -28,7 +28,7 @@ namespace iKGD
 			File.ReadAllLines(DropboxHostDBFilePath)[1])) + "\\" : Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\iKGD\\";
 		public static string RemoteFileLocation = DropboxDir + "share\\";
 
-		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, FirmwareIsBeta = false;
+		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, FirmwareIsBeta = false, OpenWikiDevicePage = false;
 		public static bool RebootDevice = true;
 		public static bool Verbose = false;
 
@@ -72,22 +72,23 @@ namespace iKGD
 
 			char c;
 			XGetopt g = new XGetopt();
-			while ((c = g.Getopt(args.Length, args, "evi:u:d:f:rSHK")) != '\0')
+			while ((c = g.Getopt(args.Length, args, "d:ef:Hi:k:KrR:Su:vw")) != '\0')
 			{
 				switch (c)
 				{
-					case 'i': IPSWLocation = g.Optarg; break;
-					case 'u': IPSWurl = g.Optarg; break;
 					case 'd': ReqDevice = g.Optarg; break;
-					case 'f': ReqFirmware = g.Optarg; break;
-					case 'k': KeysDir = g.Optarg; break;
-					case 'r': RebootDevice = false; break;
 					case 'e': ExtractFullRootFS = true; break;
-					case 'S': RunningRemotelyServer = true; break;
+					case 'f': ReqFirmware = g.Optarg; break;
 					case 'H': RunningRemotelyHome = true; break;
-					case 'R': RemoteFileLocation = g.Optarg; break;
+					case 'i': IPSWLocation = g.Optarg; break;
+					case 'k': KeysDir = g.Optarg; break;
 					case 'K': KeepRemoteFiles = true; break;
+					case 'r': RebootDevice = false; break;
+					case 'R': RemoteFileLocation = g.Optarg; break;
+					case 'S': RunningRemotelyServer = true; break;
+					case 'u': IPSWurl = g.Optarg; break;
 					case 'v': Verbose = true; break;
+					case 'w': OpenWikiDevicePage = true; break;
 				}
 			}
 
@@ -442,6 +443,14 @@ namespace iKGD
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				Utils.ConsoleWriteLine(FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+			}
+			
+			if (OpenWikiDevicePage)
+			{
+				Console.WriteLine("Opening The iPhone Wiki page keys file...");
+				Process.Start(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt");
+				Console.WriteLine("Opening The iPhone Wiki page for the build...");
+				Process.Start("http://theiphonewiki.com/wiki/index.php?title=" + Codename + "_" + BuildID + "_(" + Utils.GetTheiPhoneWikiDeviceName(BoardConfig) + ")&action=edit");
 			}
 		}
 
