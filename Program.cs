@@ -369,15 +369,13 @@ namespace iKGD
 						else if (!string.IsNullOrEmpty(IPSWurl))
 							Remote.DownloadFileFromZip(IPSWurl, @"Firmware/ICE2.Release.bbfw", IPSWdir + "ICE2.Release.bbfw");
 						ZipStorer zip = ZipStorer.Open(IPSWdir + "ICE2.Release.bbfw", FileAccess.Read);
-						List<ZipStorer.ZipFileEntry> aaa = (List<ZipStorer.ZipFileEntry>)zip.ReadCentralDir();
 						Baseband = Path.GetFileNameWithoutExtension(((List<ZipStorer.ZipFileEntry>)zip.ReadCentralDir())[0].FilenameInZip).Replace("ICE2_", "");
 						zip.Close();
 						break;
 
 					case "iPhone3,1":
 						BasebandExists = true;
-						string[] basebands = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Split(new string[] { "_" }, StringSplitOptions.None);
-						Baseband = basebands[1];
+						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Split('_')[1];
 						break;
 
 					case "iPhone3,3":
@@ -387,13 +385,11 @@ namespace iKGD
 
 					case "iPad1,1":
 						BasebandExists = true;
-						FileIO.Directory_Create(TempDir + "bb");
+						FileIO.Directory_Create(TempDir + @"bb\");
 						Utils.hfsplus_extractall(TempDir + DecryptedUpdateRamdisk, "/usr/local/standalone/firmware/", TempDir + "bb");
-						string[] bbfw = Directory.GetFiles(TempDir + "bb", "*.bbfw");
-						Utils.UnzipAll(bbfw[0], TempDir + "bb");
-						string[] basebandss = Directory.GetFiles(TempDir + "bb", "*.eep");
-						Baseband = Path.GetFileNameWithoutExtension(basebandss[1]).Replace("ICE2_", "");
-						FileIO.Directory_Delete(TempDir + "bb");
+						Utils.UnzipAll((Directory.GetFiles(TempDir + @"bb\", "*.bbfw"))[0], TempDir + @"bb\");
+						Baseband = Path.GetFileNameWithoutExtension((Directory.GetFiles(TempDir + @"bb\", "*.eep"))[1]).Replace("ICE2_", "");
+						FileIO.Directory_Delete(TempDir + @"bb\");
 						break;
 				}
 			}
