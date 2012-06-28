@@ -1,20 +1,21 @@
-## iKGD
+# iKGD
 A fully automated tool to grab AES keys for iOS firmwares. iKGD takes about 25 seconds to extract the firmware, parse stuff we need, exploit the device and run iKGD cyanide payload, grab keys, make The iPhone Wiki keys file and opensn0w plist.
 
-### Usage
+## Usage
 
 	iKGD.exe <args> [options]
-	  -i <ipswlocation>     Local path to the iOS firmware
-	  -u <ipswurl>          Remote firmware URL to download files from
-	  -d <device>           Device boardid as n90ap to fetch URL (use with -f)
-	  -f <firmwarebuild>    Firmware build as 9A334 to fetch URL (use with -d)
-	  -k <keysdir>          Path to dir to store keys (default "C:\IPSW\Keys\")
-	  -S                    Running on server (also run -H at home)
-	  -H                    Use with -S to get keys from home
-	  -R                    Manually specify dir used by Remote mode (-S or -H)
-	  -e                    Extract full root filesystem (only with -i)
-	  -r                    Don't reboot device.
-	  -v                    Verbose
+	
+		-i <ipswlocation>     Local path to the iOS firmware
+		-u <ipswurl>          Remote firmware URL to download files from
+		-d <device>           Device boardid as n90ap to fetch URL (use with -f)
+		-f <firmwarebuild>    Firmware build as 9A334 to fetch URL (use with -d)
+		-k <keysdir>          Path to dir to store keys (default "C:\IPSW\Keys\")
+		-S                    Running on server (also run -H at home)
+		-H                    Use with -S to get keys from home
+		-R                    Manually specify dir used by Remote mode (-S or -H)
+		-e                    Extract full root filesystem (only with -i)
+		-r                    Don't reboot device.
+		-v                    Verbose
 
 + Use `-i` if you have the firmware locally.
 + Use `-u` if you have a link to the firmware you want to download files from. (about 20-25MB)
@@ -30,9 +31,17 @@ I use Dropbox to automatically sync the plists. You can also do it manually (see
 All of it just works!
 </pre>
 
-### Credits
+## Devices Supported
+
+* <b>`s5l8930x`</b> - `iPhone 4`, `iPod touch 4`, `iPad 1`, `Apple TV 2`
+* <b>`s5l8922x`</b> - `iPod touch 3rd gen`
+* <b>`s5l8920x`</b> - `iPhone 3GS`
+* <b>`s5l8720x`</b> - `iPod touch 2nd gen`
+
+## Credits
 
 * [cyanide](https://github.com/Chronic-Dev/cyanide)
+* [geohot](http://geohot.com/)
 * [icj.me](http://api.ios.icj.me/v2)
 * [iH8sn0w](http://ih8sn0w.com/)
 * [irecovery](https://github.com/Chronic-Dev/libirecovery)
@@ -43,7 +52,7 @@ All of it just works!
 * XGetopt - Hans Dietrich
 * [Xpwn](https://github.com/planetbeing/xpwn)
 
-### License
+## License
 
 	Copyright (c) 2012 Neal (neal@ineal.me)
 
