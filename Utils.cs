@@ -54,6 +54,11 @@ namespace iKGD
 
 		public static void PwnDevice(string board)
 		{
+			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS") && !HasInternetConnection())
+			{
+				Console.WriteLine("\nERROR: No internet connection found! Unable to download iBSS for {0}.\n", board);
+				Environment.Exit((int)ExitCode.NoInternetConnection);
+			}
 			Console.Write("Exploiting device with limera1n...");
 			irecovery("-e");
 			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
@@ -93,7 +98,7 @@ namespace iKGD
 					return false;
 			}
 		}
-		
+
 		public static string GetTheiPhoneWikiDeviceName(string board)
 		{
 			switch (board)
@@ -110,7 +115,7 @@ namespace iKGD
 					return "";
 			}
 		}
-		
+
 		public static bool SearchDeviceInMode(string mode, bool libirecovery = false)
 		{
 			string str = "";
@@ -220,6 +225,20 @@ namespace iKGD
 				writer.Close();
 				writer.Dispose();
 				return true;
+			}
+			catch (Exception) { }
+			return false;
+		}
+
+		public static bool HasInternetConnection()
+		{
+			try
+			{
+				using (var client = new WebClient())
+				using (var stream = client.OpenRead("http://www.google.com"))
+				{
+					return true;
+				}
 			}
 			catch (Exception) { }
 			return false;

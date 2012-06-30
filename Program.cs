@@ -29,7 +29,7 @@ namespace iKGD
 		public static string RemoteFileLocation = DropboxDir + "share\\";
 
 		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, FirmwareIsBeta = false, OpenWikiDevicePage = false;
-		public static bool RebootDevice = true;
+		public static bool RebootDevice = true, HasInternet = false;
 		public static bool Verbose = false;
 
 		public static string IPSWLocation = "", IPSWurl = "", ReqDevice = "", ReqFirmware = "", RootFileSystem = "", RestoreRamdisk = "", UpdateRamdisk = "";
@@ -97,7 +97,7 @@ namespace iKGD
 			{
 				if (!FileIO.Directory_Exists(RemoteFileLocation))
 				{
-					Console.WriteLine("Directory {0} does not exist!\nUse -R to manually specify a different location.", RemoteFileLocation);
+					Console.WriteLine("\nERROR: Directory {0} does not exist!\nUse -R to manually specify a different location.\n", RemoteFileLocation);
 					Environment.Exit((int)ExitCode.InvalidRemoteFileLocation);
 				}
 				if (RunningRemotelyHome) RemoteModeHome();
@@ -106,21 +106,31 @@ namespace iKGD
 			{
 				if (!FileIO.File_Exists(IPSWLocation))
 				{
-					Console.WriteLine("File {0} does not exist!", IPSWLocation);
+					Console.WriteLine("\nERROR: File {0} does not exist!\n", IPSWLocation);
 					Environment.Exit((int)ExitCode.InvalidIPSWLocation);
 				}
 			}
 			else if (!string.IsNullOrEmpty(IPSWurl))
 			{
 				ExtractFullRootFS = false;
+				if (!Utils.HasInternetConnection())
+				{
+					Console.WriteLine("\nERROR: No internet connection found!\n");
+					Environment.Exit((int)ExitCode.NoInternetConnection);
+				}
 				if (!Remote.isURLaFirmware(IPSWurl))
 				{
-					Console.WriteLine("The url specified is not a valid iOS firmware.");
+					Console.WriteLine("\nERROR: The url specified is not a valid iOS firmware.\n");
 					Environment.Exit((int)ExitCode.URLisNotFirmware);
 				}
 			}
 			else if (!string.IsNullOrEmpty(ReqDevice) && !string.IsNullOrEmpty(ReqFirmware))
 			{
+				if (!Utils.HasInternetConnection())
+				{
+					Console.WriteLine("\nERROR: No internet connection found!\n");
+					Environment.Exit((int)ExitCode.NoInternetConnection);
+				}
 				Console.Write("Fetching link...");
 				IPSWurl = Utils.GetFirmwareURL(ReqDevice, ReqFirmware);
 				if (!Remote.isURLaFirmware(IPSWurl))
@@ -208,6 +218,11 @@ namespace iKGD
 
 		public static void DownloadIPSW()
 		{
+			if (!Utils.HasInternetConnection())
+			{
+				Console.WriteLine("\nERROR: No internet connection found!\n");
+				Environment.Exit((int)ExitCode.NoInternetConnection);
+			}
 			try
 			{
 				FileIO.Directory_Create(IPSWdir);
@@ -444,7 +459,7 @@ namespace iKGD
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				Utils.ConsoleWriteLine(FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 			}
-			
+
 			if (OpenWikiDevicePage)
 			{
 				Console.WriteLine("Opening The iPhone Wiki page keys file...");
@@ -614,6 +629,7 @@ namespace iKGD
 			PlatformNotSame = 5,
 			URLisNotFirmware = 6,
 			InvalidRemoteFileLocation = 7,
+			NoInternetConnection = 8,
 			UnknownError = 10
 		}
 	}
