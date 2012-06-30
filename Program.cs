@@ -28,7 +28,7 @@ namespace iKGD
 			File.ReadAllLines(DropboxHostDBFilePath)[1])) + "\\" : Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\iKGD\\";
 		public static string RemoteFileLocation = DropboxDir + "share\\";
 
-		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, FirmwareIsBeta = false, OpenWikiDevicePage = false;
+		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, OpenWikiDevicePage = false;
 		public static bool RebootDevice = true, HasInternet = false;
 		public static bool Verbose = false;
 
@@ -205,7 +205,7 @@ namespace iKGD
 			Console.Write("Extracting images...");
 			for (int i = (int)FirmwareItems.AppleLogo; i < TotalFirmwareItems; i++)
 			{
-				Utils.UnzipFile(IPSWLocation, IPSWdir, Utils.GetImagePathFromBuildManifest(FirmwareItem[i], IPSWdir + "BuildManifest.plist"));
+				Utils.UnzipFile(IPSWLocation, IPSWdir, Utils.GetImagePathFromBuildManifest(FirmwareItem[i]));
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 			Console.Write("Extracting ramdisks and root filesystem...");
@@ -236,7 +236,7 @@ namespace iKGD
 				Console.Write("Downloading images...");
 				for (int i = (int)FirmwareItems.AppleLogo; i < TotalFirmwareItems; i++)
 				{
-					string img = Utils.GetImagePathFromBuildManifest(FirmwareItem[i], IPSWdir + "BuildManifest.plist");
+					string img = Utils.GetImagePathFromBuildManifest(FirmwareItem[i]);
 					if (Verbose) Console.WriteLine("\r[v] Downloading " + Path.GetFileName(img));
 					Remote.DownloadFileFromZip(IPSWurl, img, IPSWdir + Path.GetFileName(img));
 				}
@@ -275,7 +275,7 @@ namespace iKGD
 			Console.Write("Grabbing kbags...");
 			for (int i = (int)FirmwareItems.AppleLogo; i < TotalFirmwareItems; i++)
 			{
-				string kbagStr = Utils.xpwntool(IPSWdir + Path.GetFileName(Utils.GetImagePathFromBuildManifest(FirmwareItem[i], IPSWdir + "BuildManifest.plist")), "/dev/null");
+				string kbagStr = Utils.xpwntool(IPSWdir + Path.GetFileName(Utils.GetImagePathFromBuildManifest(FirmwareItem[i])), "/dev/null");
 				kbag[i] = kbagStr.Substring(0, kbagStr.IndexOf(Environment.NewLine));
 			}
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
@@ -359,16 +359,20 @@ namespace iKGD
 			Console.Write("Getting vfdecryptkey...");
 			try
 			{
-				string[] vf = Utils.genpass(Platform, TempDir + DecryptedRestoreRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
-				VFDecryptKey = vf[1].Trim();
-				if ((UseUpdateRamdisk || string.IsNullOrEmpty(VFDecryptKey)) && UpdateRamdiskExists)
-				{
-					vf = Utils.genpass(Platform, TempDir + DecryptedUpdateRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries);
-					VFDecryptKey = vf[1].Trim();
-				}
+				VFDecryptKey = Utils.genpass(Platform, TempDir + DecryptedRestoreRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries)[1].Trim();
 			}
 			catch (Exception) { }
+			if ((UseUpdateRamdisk || string.IsNullOrEmpty(VFDecryptKey)) && UpdateRamdiskExists)
+			{
+				try
+				{
+					Console.Write("\tRetrying...");
+					VFDecryptKey = Utils.genpass(Platform, TempDir + DecryptedUpdateRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries)[1].Trim();
+				}
+				catch (Exception) { }
+			}
 			Utils.ConsoleWriteLine(string.IsNullOrEmpty(VFDecryptKey) ? "   [FAILED]" : "   [DONE]", ConsoleColor.DarkGray);
+			if (string.IsNullOrEmpty(VFDecryptKey)) VFDecryptKey = "TODO";
 		}
 
 		public static void GetBaseband()
@@ -391,12 +395,12 @@ namespace iKGD
 
 					case "iPhone3,1":
 						BasebandExists = true;
-						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Split('_')[1];
+						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware")).Split('_')[1];
 						break;
 
 					case "iPhone3,3":
 						BasebandExists = true;
-						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware", IPSWdir + "BuildManifest.plist")).Replace(".Release.bbfw", "").Replace("Phoenix-", "");
+						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware")).Replace(".Release.bbfw", "").Replace("Phoenix-", "");
 						break;
 
 					case "iPad1,1":
@@ -419,15 +423,14 @@ namespace iKGD
 		public static void FetchFirmwareURL()
 		{
 			Codename = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "BuildTrain");
-			FirmwareIsBeta = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "Variant").Contains("Developer");
-			if (FirmwareIsBeta)
+			if (Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "Variant").Contains("Developer"))
 			{
 				Console.WriteLine("Firmware {0} is a beta firmware, can not fetch url for it.", BuildID);
 				return;
 			}
 			Console.WriteLine("Fetching url for " + Device + " and " + BuildID);
 			DownloadURL = Utils.GetFirmwareURL(Device, BuildID);
-			if (string.IsNullOrEmpty(DownloadURL))
+			if (DownloadURL == "TODO")
 				Console.WriteLine("Unable to find url. Perhaps " + BuildID + " is a beta firmware?");
 		}
 
@@ -619,7 +622,7 @@ namespace iKGD
 			Utils.irecovery_fbecho("=====================================");
 		}
 
-		enum ExitCode : int
+		public enum ExitCode : int
 		{
 			Success = 0,
 			Usage = 1,
