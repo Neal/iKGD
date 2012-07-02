@@ -47,9 +47,9 @@ namespace iKGD
 				FileIO.Directory_Delete(iKGD.Resources);
 				FileIO.SaveResourceToDisk("Resources.zip", iKGD.TempDir + "Resources.zip");
 				UnzipAll(iKGD.TempDir + "Resources.zip", iKGD.Resources);
+				FileIO.File_Delete(iKGD.TempDir + "Resources.zip");
 			}
 			FileIO.Directory_Delete(iKGD.IPSWdir);
-			FileIO.File_Delete(iKGD.TempDir + "Resources.zip");
 		}
 
 		public static void PwnDevice(string board)
@@ -58,10 +58,15 @@ namespace iKGD
 			irecovery("-e");
 			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
 			{
-				Console.Write("\nDownloading iBSS for " + board + "...");
+				Console.Write("\nERROR: Unable to download iBSS.");
 				Remote.DownloadImage("iBSS", board, iKGD.TempDir + board + ".iBSS");
 			}
 			else Delay(1);
+			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
+			{
+				Console.Write("\nDownloading iBSS for " + board + "...");
+				Environment.Exit((int)iKGD.ExitCode.NoInternetConnection);
+			}
 			Console.Write("\nUploading iBSS...");
 			irecovery_file(iKGD.TempDir + board + ".iBSS");
 			Console.Write("\nWaiting for iBSS...");
