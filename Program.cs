@@ -211,8 +211,8 @@ namespace iKGD
 			Console.Write("Extracting ramdisks and root filesystem...");
 			if (ExtractFullRootFS) Utils.UnzipFile(IPSWLocation, IPSWdir, RootFileSystem);
 			if (!ExtractFullRootFS) Utils.UnzipFile(IPSWLocation, IPSWdir, RootFileSystem, 122880);
-			Utils.UnzipFile(IPSWLocation, IPSWdir, UpdateRamdisk);
-			Utils.UnzipFile(IPSWLocation, IPSWdir, RestoreRamdisk);
+			if (UpdateRamdiskExists) Utils.UnzipFile(IPSWLocation, IPSWdir, UpdateRamdisk);
+			if (RestoreRamdiskExists) Utils.UnzipFile(IPSWLocation, IPSWdir, RestoreRamdisk);
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
