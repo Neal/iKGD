@@ -154,7 +154,7 @@ namespace iKGD
 			if (!string.IsNullOrEmpty(IPSWLocation))
 				ExtractIPSW();
 
-			if (!string.IsNullOrEmpty(IPSWurl))
+			else if (!string.IsNullOrEmpty(IPSWurl))
 				DownloadIPSW();
 
 			CheckRamdisks();
@@ -211,8 +211,8 @@ namespace iKGD
 			Console.Write("Extracting ramdisks and root filesystem...");
 			if (ExtractFullRootFS) Utils.UnzipFile(IPSWLocation, IPSWdir, RootFileSystem);
 			if (!ExtractFullRootFS) Utils.UnzipFile(IPSWLocation, IPSWdir, RootFileSystem, 122880);
-			if (UpdateRamdiskExists) Utils.UnzipFile(IPSWLocation, IPSWdir, UpdateRamdisk);
-			if (RestoreRamdiskExists) Utils.UnzipFile(IPSWLocation, IPSWdir, RestoreRamdisk);
+			Utils.UnzipFile(IPSWLocation, IPSWdir, UpdateRamdisk);
+			Utils.UnzipFile(IPSWLocation, IPSWdir, RestoreRamdisk);
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
@@ -354,7 +354,7 @@ namespace iKGD
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
-		public static void GetVFDecryptKey(bool UseUpdateRamdisk = false)
+		public static void GetVFDecryptKey()
 		{
 			Console.Write("Getting vfdecryptkey...");
 			try
@@ -362,17 +362,18 @@ namespace iKGD
 				VFDecryptKey = Utils.genpass(Platform, TempDir + DecryptedRestoreRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries)[1].Trim();
 			}
 			catch (Exception) { }
-			if ((UseUpdateRamdisk || string.IsNullOrEmpty(VFDecryptKey)) && UpdateRamdiskExists)
-			{
-				try
-				{
-					Console.Write("\tRetrying...");
-					VFDecryptKey = Utils.genpass(Platform, TempDir + DecryptedUpdateRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries)[1].Trim();
-				}
-				catch (Exception) { }
-			}
+			if (string.IsNullOrEmpty(VFDecryptKey)) GetVFDecryptKeyWithUpdateRamdisk();
 			Utils.ConsoleWriteLine(string.IsNullOrEmpty(VFDecryptKey) ? "   [FAILED]" : "   [DONE]", ConsoleColor.DarkGray);
 			if (string.IsNullOrEmpty(VFDecryptKey)) VFDecryptKey = "TODO";
+		}
+
+		public static void GetVFDecryptKeyWithUpdateRamdisk()
+		{
+			try
+			{
+				VFDecryptKey = Utils.genpass(Platform, TempDir + DecryptedUpdateRamdisk, IPSWdir + RootFileSystem).Split(new string[] { "vfdecrypt key: " }, StringSplitOptions.RemoveEmptyEntries)[1].Trim();
+			}
+			catch { }
 		}
 
 		public static void GetBaseband()
@@ -480,10 +481,16 @@ namespace iKGD
 				Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + DecryptedRootFS, VFDecryptKey);
 				if (Utils.GetFileSizeOnDisk(TempDir + DecryptedRootFS) == 0)
 				{
-					GetVFDecryptKey(true);
+					GetVFDecryptKeyWithUpdateRamdisk();
 					Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + DecryptedRootFS, VFDecryptKey);
 				}
 				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + DecryptedRootFS) != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+				if (Verbose)
+				{
+					Console.Write("Extracing Root FileSystem...");
+					Utils.hfsplus_extractall(TempDir + DecryptedRootFS, "/usr/libexec/", TempDir + "rootfs");
+					Utils.ConsoleWriteLine((FileIO.File_Exists(TempDir + @"rootfs\sbin\mount")) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
+				}
 			}
 		}
 

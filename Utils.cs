@@ -30,7 +30,7 @@ namespace iKGD
 		{
 			ConsoleWrite(str + "\n", color);
 		}
-		
+
 		public static void Delay(double SecondsToDelay)
 		{
 			DateAndTime.Now.AddSeconds(1.1574074074074073E-05);
@@ -54,21 +54,22 @@ namespace iKGD
 
 		public static void PwnDevice(string board)
 		{
+			string iBSS = iKGD.TempDir + board + ".iBSS";
 			Console.Write("Exploiting device with {0}...", (iKGD.Platform.Contains("8720")) ? "steaks4uce" : "limera1n");
 			irecovery("-e");
-			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
-			{
-				Console.Write("\nERROR: Unable to download iBSS.");
-				Remote.DownloadImage("iBSS", board, iKGD.TempDir + board + ".iBSS");
-			}
-			else Delay(1);
-			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
+			if (!FileIO.File_Exists(iBSS))
 			{
 				Console.Write("\nDownloading iBSS for " + board + "...");
-				Environment.Exit((int)iKGD.ExitCode.NoInternetConnection);
+				Remote.DownloadImage("iBSS", board, iBSS);
+				if (!FileIO.File_Exists(iBSS))
+				{
+					Console.Write("\nERROR: Unable to download iBSS.");
+					Environment.Exit((int)iKGD.ExitCode.NoInternetConnection);
+				}
 			}
+			else Delay(1);
 			Console.Write("\nUploading iBSS...");
-			irecovery_file(iKGD.TempDir + board + ".iBSS");
+			irecovery_file(iBSS);
 			Console.Write("\nWaiting for iBSS...");
 			while (!SearchDeviceInMode("iBoot")) { };
 			Console.Write("\nUploading iKGD iBSS payload...");
@@ -439,6 +440,9 @@ namespace iKGD
 			size = (long)hosize << 32 | losize;
 			return ((size + clusterSize - 1) / clusterSize) * clusterSize;
 		}
+
+		[DllImport("kernel32.dll")]
+		static extern void Sleep(double milliseconds);
 
 		[DllImport("kernel32.dll")]
 		static extern uint GetCompressedFileSizeW([In, MarshalAs(UnmanagedType.LPWStr)] string lpFileName,
