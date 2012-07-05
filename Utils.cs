@@ -54,7 +54,7 @@ namespace iKGD
 
 		public static void PwnDevice(string board)
 		{
-			Console.Write("Exploiting device with limera1n...");
+			Console.Write("Exploiting device with {0}...", (iKGD.Platform.Contains("8720")) ? "steaks4uce" : "limera1n");
 			irecovery("-e");
 			if (!FileIO.File_Exists(iKGD.TempDir + board + ".iBSS"))
 			{
