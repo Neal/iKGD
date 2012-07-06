@@ -348,7 +348,7 @@ namespace iKGD
 			catch (Exception) { }
 		}
 
-		public static void MakeTheiPhoneWikiFile(string fileLocation)
+		public static void MakeKeysFileForTheiPhoneWiki(string fileLocation)
 		{
 			using (StreamWriter writer = new StreamWriter(fileLocation))
 			{
@@ -393,11 +393,10 @@ namespace iKGD
 					writer.WriteLine(" | " + str.Replace("IV ", "Key") + "= " + iKGD.key[i]);
 				}
 				writer.WriteLine("}}");
-				writer.WriteLine();
 			}
 		}
 
-		public static void MakeOpensn0wPlist(string fileLocation)
+		public static void MakeKeysFileForOpensn0w(string fileLocation)
 		{
 			Dictionary<string, object> dict = new Dictionary<string, object>();
 			Dictionary<string, object> FirmwareKeys = new Dictionary<string, object>();
@@ -425,6 +424,44 @@ namespace iKGD
 			dict.Add("FirmwareKeys", FirmwareKeys);
 			dict.Add("FirmwareInfo", FirmwareInfo);
 			Plist.writeXml(dict, fileLocation);
+		}
+
+		public static void MakeKeysFileForPastie(string fileLocation)
+		{
+			using (StreamWriter writer = new StreamWriter(fileLocation))
+			{
+				writer.WriteLine("iOS {0} ({1}) keys/ivs for {2}.", iKGD.Firmware, iKGD.BuildID, iKGD.Device);
+				writer.WriteLine("------------------------------");
+				writer.WriteLine("{0} [RootFS]", iKGD.RootFileSystem);
+				writer.WriteLine("------------------------------");
+				writer.WriteLine("VFDecryptKey: " + iKGD.VFDecryptKey);
+				writer.WriteLine("------------------------------");
+				if (iKGD.UpdateRamdiskIsEncrypted)
+				{
+					writer.WriteLine("{0} [UpdateRD]", iKGD.UpdateRamdisk);
+					writer.WriteLine("------------------------------");
+					writer.WriteLine("IV: " + iKGD.iv[(int)iKGD.FirmwareItems.UpdateRamdisk]);
+					writer.WriteLine("Key: " + iKGD.key[(int)iKGD.FirmwareItems.UpdateRamdisk]);
+					writer.WriteLine("------------------------------");
+				}
+				if (iKGD.RestoreRamdiskIsEncrypted)
+				{
+					writer.WriteLine("{0} [RestoreRD]", iKGD.RestoreRamdisk);
+					writer.WriteLine("------------------------------");
+					writer.WriteLine("IV: " + iKGD.iv[(int)iKGD.FirmwareItems.RestoreRamdisk]);
+					writer.WriteLine("Key: " + iKGD.key[(int)iKGD.FirmwareItems.RestoreRamdisk]);
+					writer.WriteLine("------------------------------");
+				}
+				for (int i = (int)iKGD.FirmwareItems.AppleLogo; i < iKGD.TotalFirmwareItems; i++)
+				{
+					writer.WriteLine(iKGD.FirmwareItem[i]);
+					writer.WriteLine("------------------------------");
+					writer.WriteLine("IV: " + iKGD.iv[i]);
+					writer.WriteLine("Key: " + iKGD.key[i]);
+					writer.WriteLine("------------------------------");
+				}
+				writer.WriteLine();
+			}
 		}
 
 		public static long GetFileSizeOnDisk(string file)

@@ -66,6 +66,7 @@ namespace iKGD
 		public static string[] iv = new string[TotalFirmwareItems];
 		public static string[] key = new string[TotalFirmwareItems];
 
+		[STAThread]
 		static void Main(string[] args)
 		{
 			Console.WriteLine("\nInitializing iKGD v" + Version);
@@ -437,12 +438,16 @@ namespace iKGD
 
 		public static void MakeFilesForKeys()
 		{
-			Console.Write("Making The iPhone Wiki Keys file...");
-			Utils.MakeTheiPhoneWikiFile(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt");
+			Console.Write("Making The iPhone Wiki keys file...");
+			Utils.MakeKeysFileForTheiPhoneWiki(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt");
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 
-			Console.Write("Making opensn0w Keys plist...");
-			Utils.MakeOpensn0wPlist(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist");
+			Console.Write("Making opensn0w keys plist...");
+			Utils.MakeKeysFileForOpensn0w(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist");
+			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+
+			Console.Write("Making pastie keys file...");
+			Utils.MakeKeysFileForPastie(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt");
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
 		}
 
@@ -452,6 +457,7 @@ namespace iKGD
 			if (FileIO.Directory_Create(KeysDir))
 			{
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Key2.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", KeysDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 			}
 			Utils.ConsoleWriteLine(FileIO.File_Exists(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
@@ -460,14 +466,15 @@ namespace iKGD
 			{
 				Console.Write("Copying keys to " + RemoteFileLocation);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				Utils.ConsoleWriteLine(FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 			}
 
 			if (OpenWikiDevicePage)
 			{
-				Console.WriteLine("Opening The iPhone Wiki page keys file...");
-				Process.Start(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt");
+				Console.WriteLine("Copying The iPhone Wiki keys to clipboard...");
+				System.Windows.Forms.Clipboard.SetText(File.ReadAllText(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt"));
 				Console.WriteLine("Opening The iPhone Wiki page for the build...");
 				Process.Start("http://theiphonewiki.com/wiki/index.php?title=" + Codename + "_" + BuildID + "_(" + Utils.GetTheiPhoneWikiDeviceName(BoardConfig) + ")&action=edit");
 			}
@@ -485,12 +492,6 @@ namespace iKGD
 					Utils.dmg_extract(IPSWdir + RootFileSystem, TempDir + DecryptedRootFS, VFDecryptKey);
 				}
 				Utils.ConsoleWriteLine((Utils.GetFileSizeOnDisk(TempDir + DecryptedRootFS) != 0) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
-				if (Verbose)
-				{
-					Console.Write("Extracing Root FileSystem...");
-					Utils.hfsplus_extractall(TempDir + DecryptedRootFS, "/usr/libexec/", TempDir + "rootfs");
-					Utils.ConsoleWriteLine((FileIO.File_Exists(TempDir + @"rootfs\sbin\mount")) ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
-				}
 			}
 		}
 
