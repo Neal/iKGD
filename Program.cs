@@ -18,9 +18,9 @@ namespace iKGD
 	internal sealed class iKGD
 	{
 		public static string Version = "1.0";
-		public static string TempDir = Path.GetTempPath() + @"iKGD\";
+		public static string TempDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\iKGD\";
 		public static string IPSWdir = TempDir + @"IPSW\";
-		public static string Resources = TempDir + @"Resources\";
+		public static string Resources = TempDir + @"resources\";
 		public static string KeysDir = @"C:\IPSW\Keys\";
 		public static string CurrentProcessName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
 		public static string DropboxHostDBFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dropbox\\host.db");
@@ -28,7 +28,7 @@ namespace iKGD
 			File.ReadAllLines(DropboxHostDBFilePath)[1])) + "\\" : Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\iKGD\\";
 		public static string RemoteFileLocation = DropboxDir + "share\\";
 
-		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, OpenWikiDevicePage = false;
+		public static bool RunningRemotelyServer = false, RunningRemotelyHome = false, KeepRemoteFiles = false, OpenWikiDevicePage = false, OpenPastie = false;
 		public static bool RebootDevice = true, HasInternet = false;
 		public static bool Verbose = false;
 
@@ -36,7 +36,7 @@ namespace iKGD
 		public static string DecryptedRootFS = "DEC-RootFS.dmg", DecryptedRestoreRamdisk = "DEC-RestoreRD.dmg", DecryptedUpdateRamdisk = "DEC-UpdateRD.dmg";
 		public static bool RestoreRamdiskIsEncrypted, RestoreRamdiskExists, UpdateRamdiskIsEncrypted, UpdateRamdiskExists, ExtractFullRootFS = false;
 
-		public static string Device, Firmware, BuildID, Codename, Platform, BoardConfig, PluggedInDevice, VFDecryptKey, DownloadURL = "", Baseband = "";
+		public static string Device, Firmware, BuildID, Codename, Platform, BoardConfig, PluggedInDevice, VFDecryptKey, Baseband, DownloadURL = "";
 		public static bool BasebandExists = false;
 
 		public enum FirmwareItems : int
@@ -67,13 +67,13 @@ namespace iKGD
 		public static string[] key = new string[TotalFirmwareItems];
 
 		[STAThread]
-		static void Main(string[] args)
+		public static void Main(string[] args)
 		{
 			Console.WriteLine("\nInitializing iKGD v" + Version);
 
 			char c;
 			XGetopt g = new XGetopt();
-			while ((c = g.Getopt(args.Length, args, "d:ef:Hi:k:KrR:Su:vw")) != '\0')
+			while ((c = g.Getopt(args.Length, args, "d:ef:Hi:k:KprR:Su:vw")) != '\0')
 			{
 				switch (c)
 				{
@@ -84,6 +84,7 @@ namespace iKGD
 					case 'i': IPSWLocation = g.Optarg; break;
 					case 'k': KeysDir = g.Optarg; break;
 					case 'K': KeepRemoteFiles = true; break;
+					case 'p': OpenPastie = true; break;
 					case 'r': RebootDevice = false; break;
 					case 'R': RemoteFileLocation = g.Optarg; break;
 					case 'S': RunningRemotelyServer = true; break;
@@ -269,6 +270,8 @@ namespace iKGD
 			RestoreRamdiskIsEncrypted = (kbag[(int)FirmwareItems.RestoreRamdisk].Length != 0) && RestoreRamdiskExists;
 			Console.WriteLine("Update ramdisk: " + (UpdateRamdiskExists ? (UpdateRamdiskIsEncrypted ? "encrypted" : "decrypted") : "not found"));
 			Console.WriteLine("Restore ramdisk: " + (RestoreRamdiskExists ? (RestoreRamdiskIsEncrypted ? "encrypted" : "decrypted") : "not found"));
+			if (UpdateRamdiskIsEncrypted) FileIO.File_Delete(TempDir + DecryptedUpdateRamdisk);
+			if (RestoreRamdiskIsEncrypted) FileIO.File_Delete(TempDir + DecryptedRestoreRamdisk);
 		}
 
 		public static void GrabKBAGS()
@@ -285,10 +288,10 @@ namespace iKGD
 		public static void MakeDeviceReady()
 		{
 			Utils.irecovery("-killitunes");
+			Console.Write("Waiting for device in DFU mode...");
 			if (!Utils.irecovery_getenv("iKGD").Contains("true"))
 			{
 				int count = 1;
-				Console.Write("Waiting for device in DFU mode...");
 				while (!Utils.SearchDeviceInMode("DFU"))
 				{
 					Console.CursorLeft = 0;
@@ -315,13 +318,14 @@ namespace iKGD
 			}
 			else
 			{
+				Console.CursorLeft = 0;
+				Console.WriteLine("Found device running iKGD payload");
 				if ((Utils.irecovery("-platform").Trim() != Platform) && (!string.IsNullOrEmpty(Platform)))
 				{
 					Console.WriteLine("\nERROR: Plugged in device is not the same platform as the ipsw!");
 					Console.WriteLine("\nYou plugged in a {0} while you're trying to get keys for {1}.\n", Utils.irecovery("-platform").Trim(), Platform);
 					Environment.Exit((int)ExitCode.PlatformNotSame);
 				}
-				Console.WriteLine("Found device running iKGD payload");
 				Utils.irecovery_cmd("go fbclear");
 			}
 			irecv_fbechoikgd();
@@ -424,8 +428,7 @@ namespace iKGD
 
 		public static void FetchFirmwareURL()
 		{
-			Codename = Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "BuildTrain");
-			if (Utils.ParseBuildManifestInfo(IPSWdir + "BuildManifest.plist", "Variant").Contains("Developer"))
+			if (Utils.ParseBuildManifestInfo("Variant").Contains("Developer"))
 			{
 				Console.WriteLine("Firmware {0} is a beta firmware, can not fetch url for it.", BuildID);
 				return;
@@ -453,11 +456,18 @@ namespace iKGD
 
 		public static void CopyKeysToKeysDir()
 		{
+			if (RunningRemotelyHome)
+			{
+				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
+				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
+				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
+			}
+
 			Console.Write("Copying keys to the keys directory");
 			if (FileIO.Directory_Create(KeysDir))
 			{
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
-				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Key2.txt", true);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", KeysDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 			}
 			Utils.ConsoleWriteLine(FileIO.File_Exists(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
@@ -466,7 +476,7 @@ namespace iKGD
 			{
 				Console.Write("Copying keys to " + RemoteFileLocation);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
-				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				Utils.ConsoleWriteLine(FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 			}
@@ -474,9 +484,16 @@ namespace iKGD
 			if (OpenWikiDevicePage)
 			{
 				Console.WriteLine("Copying The iPhone Wiki keys to clipboard...");
-				System.Windows.Forms.Clipboard.SetText(File.ReadAllText(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt"));
+				Utils.SetClipboardDataObject((string)File.ReadAllText(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt"));
 				Console.WriteLine("Opening The iPhone Wiki page for the build...");
 				Process.Start("http://theiphonewiki.com/wiki/index.php?title=" + Codename + "_" + BuildID + "_(" + Utils.GetTheiPhoneWikiDeviceName(BoardConfig) + ")&action=edit");
+			}
+			else if (OpenPastie)
+			{
+				Console.WriteLine("Copying pastie keys to clipboard...");
+				Utils.SetClipboardDataObject((string)File.ReadAllText(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt"));
+				Console.WriteLine("Opening pastie.org");
+				Process.Start("http://pastie.org/");
 			}
 		}
 
@@ -507,6 +524,8 @@ namespace iKGD
 			Firmware = Utils.GetValueByKey(FirmwareInfo, "Firmware");
 			BuildID = Utils.GetValueByKey(FirmwareInfo, "BuildID");
 			Platform = Utils.GetValueByKey(FirmwareInfo, "Platform");
+			Codename = Utils.GetValueByKey(FirmwareInfo, "Codename");
+			BoardConfig = Utils.GetValueByKey(FirmwareInfo, "BoardConfig");
 			UpdateRamdiskIsEncrypted = FirmwareInfo.ContainsKey("UpdateRamdiskEncrypted") ? (bool)FirmwareInfo["UpdateRamdiskEncrypted"] : false;
 			RestoreRamdiskIsEncrypted = FirmwareInfo.ContainsKey("RestoreRamdiskEncrypted") ? (bool)FirmwareInfo["RestoreRamdiskEncrypted"] : false;
 			for (int i = (int)FirmwareItems.UpdateRamdisk; i < TotalFirmwareItems; i++)
@@ -532,6 +551,12 @@ namespace iKGD
 			RemoteHomeDict.Add("Keys", Keys);
 			Plist.writeXml(RemoteHomeDict, RemoteFileLocation + "iKGD-RemoteHome.plist");
 			Utils.ConsoleWriteLine("   [DONE]", ConsoleColor.DarkGray);
+			Console.Write("Waiting for updated keys from server...");
+			while (!FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist")) { };
+			while (!FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt")) { };
+			while (!FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt")) { };
+			Console.WriteLine();
+			CopyKeysToKeysDir();
 			Environment.Exit((int)ExitCode.Success);
 		}
 
@@ -549,6 +574,8 @@ namespace iKGD
 			FirmwareInfo.Add("Firmware", Firmware);
 			FirmwareInfo.Add("BuildID", BuildID);
 			FirmwareInfo.Add("Platform", Platform);
+			FirmwareInfo.Add("Codename", Codename);
+			FirmwareInfo.Add("BoardConfig", BoardConfig);
 			FirmwareInfo.Add("UpdateRamdiskEncrypted", UpdateRamdiskIsEncrypted);
 			FirmwareInfo.Add("RestoreRamdiskEncrypted", RestoreRamdiskIsEncrypted);
 			if (UpdateRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[0], kbag[0]);

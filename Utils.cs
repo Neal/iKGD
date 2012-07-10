@@ -260,11 +260,11 @@ namespace iKGD
 			return "TODO";
 		}
 
-		public static string ParseBuildManifestInfo(string BuildManifestPath, string Key)
+		public static string ParseBuildManifestInfo(string Key)
 		{
 			try
 			{
-				Dictionary<string, object> dict = (Dictionary<string, object>)Plist.readPlist(BuildManifestPath);
+				Dictionary<string, object> dict = (Dictionary<string, object>)Plist.readPlist(iKGD.IPSWdir + "BuildManifest.plist");
 				Dictionary<string, object> BuildIdentities = (Dictionary<string, object>)((List<object>)dict["BuildIdentities"])[0];
 				Dictionary<string, object> Info = (Dictionary<string, object>)BuildIdentities["Info"];
 				return Info[Key].ToString();
@@ -272,6 +272,7 @@ namespace iKGD
 			catch (Exception) { }
 			return "";
 		}
+
 		public static string GetImagePathFromBuildManifest(string image)
 		{
 			try
@@ -285,6 +286,7 @@ namespace iKGD
 			catch (Exception) { }
 			return "";
 		}
+
 		public static void ParseRestorePlist(string RestorePlistPath)
 		{
 			try
@@ -298,9 +300,10 @@ namespace iKGD
 				iKGD.BuildID = GetValueByKey(dict, "ProductBuildVersion");
 				iKGD.Platform = GetValueByKey(DeviceMap, "Platform");
 				iKGD.BoardConfig = GetValueByKey(DeviceMap, "BoardConfig");
-				iKGD.RootFileSystem = GetValueByKey(SystemRestoreImages, "User");
-				iKGD.RestoreRamdisk = GetValueByKey(RestoreRamDisks, "User");
 				iKGD.UpdateRamdisk = GetValueByKey(RestoreRamDisks, "Update");
+				iKGD.RestoreRamdisk = GetValueByKey(RestoreRamDisks, "User");
+				iKGD.RootFileSystem = GetValueByKey(SystemRestoreImages, "User");
+				iKGD.Codename = ParseBuildManifestInfo("BuildTrain");
 			}
 			catch (Exception) { }
 		}
@@ -308,44 +311,6 @@ namespace iKGD
 		public static string GetValueByKey(Dictionary<string, object> dict, string key)
 		{
 			return dict.ContainsKey(key) ? (string)dict[key] : "";
-		}
-
-		public static string ExecuteCommandAndGetOutput(string command)
-		{
-			try
-			{
-				ProcessStartInfo info = new ProcessStartInfo("cmd", "/c " + command)
-				{
-					CreateNoWindow = true,
-					UseShellExecute = false,
-					RedirectStandardError = true,
-					RedirectStandardOutput = true
-				};
-				Process process = new Process { StartInfo = info };
-				process.Start();
-				string output = process.StandardOutput.ReadToEnd();
-				process.WaitForExit();
-				return output;
-			}
-			catch (Exception) { }
-			return "";
-		}
-		public static void ExecuteCommand(object command)
-		{
-			ExecuteCommandAndGetOutput((string)command);
-		}
-		public static void ExecuteCommandAsync(string command)
-		{
-			try
-			{
-				Thread objThread = new Thread(new ParameterizedThreadStart(ExecuteCommand));
-				objThread.Priority = ThreadPriority.AboveNormal;
-				objThread.IsBackground = true;
-				objThread.Start(command);
-			}
-			catch (ThreadStartException) { }
-			catch (ThreadAbortException) { }
-			catch (Exception) { }
 		}
 
 		public static void MakeKeysFileForTheiPhoneWiki(string fileLocation)
@@ -419,7 +384,8 @@ namespace iKGD
 				FirmwareKeys.Add("RestoreRamdisk", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("RestoreRamdisk") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.RestoreRamdisk] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.RestoreRamdisk] } });
 			FirmwareKeys.Add("GlyphPlugin", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("GlyphPlugin") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryPlugin] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryPlugin] } });
 			FirmwareKeys.Add("BatteryLow1", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryLow1") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryLow1] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryLow1] } });
-			FirmwareInfo.Add("URL", iKGD.DownloadURL);
+			if (!string.IsNullOrEmpty(iKGD.DownloadURL))
+				FirmwareInfo.Add("URL", iKGD.DownloadURL);
 			FirmwareInfo.Add("Version", iKGD.Firmware);
 			dict.Add("FirmwareKeys", FirmwareKeys);
 			dict.Add("FirmwareInfo", FirmwareInfo);
@@ -430,7 +396,8 @@ namespace iKGD
 		{
 			using (StreamWriter writer = new StreamWriter(fileLocation))
 			{
-				writer.WriteLine("iOS {0} ({1}) keys/ivs for {2}.", iKGD.Firmware, iKGD.BuildID, iKGD.Device);
+				writer.WriteLine("## iOS {0} ({1}) keys/ivs for {2}.  [plain_text]", iKGD.Firmware, iKGD.BuildID, iKGD.Device);
+				writer.WriteLine();
 				writer.WriteLine("------------------------------");
 				writer.WriteLine("{0} [RootFS]", iKGD.RootFileSystem);
 				writer.WriteLine("------------------------------");
@@ -462,6 +429,58 @@ namespace iKGD
 				}
 				writer.WriteLine();
 			}
+		}
+
+		public static void SetClipboardDataObject(object data)
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				try
+				{
+					System.Windows.Forms.Clipboard.SetDataObject(data);
+					return;
+				}
+				catch { }
+				System.Threading.Thread.Sleep(100);
+			}
+		}
+
+		public static string ExecuteCommandAndGetOutput(string command)
+		{
+			try
+			{
+				ProcessStartInfo info = new ProcessStartInfo("cmd", "/c " + command)
+				{
+					CreateNoWindow = true,
+					UseShellExecute = false,
+					RedirectStandardError = true,
+					RedirectStandardOutput = true
+				};
+				Process process = new Process { StartInfo = info };
+				process.Start();
+				string output = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
+				return output;
+			}
+			catch (Exception) { }
+			return "";
+		}
+		public static void ExecuteCommand(object command)
+		{
+			ExecuteCommandAndGetOutput((string)command);
+		}
+		public static void ExecuteCommandAsync(string command)
+		{
+			try
+			{
+				Thread objThread = new Thread(new ParameterizedThreadStart(ExecuteCommand));
+				objThread.Priority = ThreadPriority.AboveNormal;
+				objThread.IsBackground = true;
+				objThread.Start(command);
+			}
+			catch (ThreadStartException) { }
+			catch (ThreadAbortException) { }
+			catch (Exception) { }
 		}
 
 		public static long GetFileSizeOnDisk(string file)

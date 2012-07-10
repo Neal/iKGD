@@ -7,7 +7,7 @@ using ICSharpCode.SharpZipLib.Zip;
 
 namespace iKGD
 {
-    static class Remote
+	public static class Remote
 	{
 		public static void CopyStream(Stream input, Stream output)
 		{
@@ -41,7 +41,6 @@ namespace iKGD
 							FileStream output = new FileStream(LocalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 							CopyStream(file.GetInputStream(current), output);
 							output.Close();
-							Utils.Delay(1);
 							break;
 						}
 					}
@@ -75,7 +74,6 @@ namespace iKGD
 								FileStream output = new FileStream(LocalPath[i], FileMode.OpenOrCreate, FileAccess.ReadWrite);
 								CopyStream(file.GetInputStream(current), output);
 								output.Close();
-								Utils.Delay(1);
 								break;
 							}
 						}
@@ -108,7 +106,7 @@ namespace iKGD
 					(enumerator as IDisposable).Dispose();
 				}
 			}
-			catch (Exception) { }
+			catch { }
 			return false;
 		}
 
@@ -128,33 +126,37 @@ namespace iKGD
 
 		public static void DownloadImage(string Image, string DeviceBoardConfig, string TargetPath)
 		{
-			string url = "";
-			switch (DeviceBoardConfig)
+			string url = GetDeviceURL(DeviceBoardConfig);
+			if (string.IsNullOrEmpty(url)) return;
+			switch (Image)
 			{
-				case "n72ap":
-					url = "http://appldnld.apple.com/iPhone4/061-7937.20100908.ghj4f/iPod2,1_4.1_8B117_Restore.ipsw"; break;
-				case "n18ap":
-					url = "http://appldnld.apple.com/iPhone4/061-7941.20100908.sV9KE/iPod3,1_4.1_8B117_Restore.ipsw"; break;
-				case "n81ap":
-					url = "http://appldnld.apple.com/iPhone4/061-8490.20100901.hyjtR/iPod4,1_4.1_8B117_Restore.ipsw"; break;
-				case "n88ap":
-					url = "http://appldnld.apple.com/iPhone4/061-7938.20100908.F3rCk/iPhone2,1_4.1_8B117_Restore.ipsw"; break;
-				case "n90ap":
-					url = "http://appldnld.apple.com/iPhone4/061-7939.20100908.Lcyg3/iPhone3,1_4.1_8B117_Restore.ipsw"; break;
-				case "n92ap":
-					url = ""; break;
-				case "k48ap":
-					url = "http://appldnld.apple.com/iPad/061-8801.20100811.CvfR5/iPad1,1_3.2.2_7B500_Restore.ipsw"; break;
-				case "k66ap":
-					url = "http://appldnld.apple.com/AppleTV/061-8940.20100926.Tvtnz/AppleTV2,1_4.1_8M89_Restore.ipsw"; break;
-			}
-			if (!string.IsNullOrEmpty(url))
-			{
-				if (Image == "iBSS")
+				case "iBSS":
 					DownloadFileFromZip(url, "Firmware/dfu/iBSS." + DeviceBoardConfig + ".RELEASE.dfu", TargetPath);
-				if (Image == "iBoot")
+					break;
+
+				case "iBEC":
+					DownloadFileFromZip(url, "Firmware/dfu/iBEC." + DeviceBoardConfig + ".RELEASE.dfu", TargetPath);
+					break;
+
+				case "iBoot":
 					DownloadFileFromZip(url, "Firmware/all_flash/all_flash." + DeviceBoardConfig + ".production/iBoot." + DeviceBoardConfig + ".RELEASE.img3", TargetPath);
+					break;
 			}
+		}
+
+		public static string GetDeviceURL(string board)
+		{
+			switch (board)
+			{
+				case "n72ap": return "http://appldnld.apple.com/iPhone4/061-7937.20100908.ghj4f/iPod2,1_4.1_8B117_Restore.ipsw";
+				case "n18ap": return "http://appldnld.apple.com/iPhone4/061-7941.20100908.sV9KE/iPod3,1_4.1_8B117_Restore.ipsw";
+				case "n81ap": return "http://appldnld.apple.com/iPhone4/061-8490.20100901.hyjtR/iPod4,1_4.1_8B117_Restore.ipsw";
+				case "n88ap": return "http://appldnld.apple.com/iPhone4/061-7938.20100908.F3rCk/iPhone2,1_4.1_8B117_Restore.ipsw";
+				case "n90ap": return "http://appldnld.apple.com/iPhone4/061-7939.20100908.Lcyg3/iPhone3,1_4.1_8B117_Restore.ipsw";
+				case "k48ap": return "http://appldnld.apple.com/iPad/061-8801.20100811.CvfR5/iPad1,1_3.2.2_7B500_Restore.ipsw";
+				case "k66ap": return "http://appldnld.apple.com/AppleTV/061-8940.20100926.Tvtnz/AppleTV2,1_4.1_8M89_Restore.ipsw";
+			}
+			return "";
 		}
     }
 }
