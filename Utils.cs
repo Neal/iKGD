@@ -331,7 +331,7 @@ namespace iKGD
 				writer.WriteLine(" | rootfskey           = " + iKGD.VFDecryptKey);
 				if (!iKGD.UpdateRamdiskExists)
 					writer.WriteLine(writer.NewLine + " | noupdateramdisk     = true");
-				if (!iKGD.UpdateRamdiskIsEncrypted)
+				if (!iKGD.RestoreRamdiskIsEncrypted)
 					writer.WriteLine(writer.NewLine + " | ramdisknotencrypted = true");
 				if (iKGD.UpdateRamdiskExists)
 				{

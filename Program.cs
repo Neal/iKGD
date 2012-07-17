@@ -458,26 +458,26 @@ namespace iKGD
 		{
 			if (RunningRemotelyHome)
 			{
+				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
 				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
-				FileIO.File_Copy(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 			}
 
 			Console.Write("Copying keys to the keys directory");
 			if (FileIO.Directory_Create(KeysDir))
 			{
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", KeysDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
-				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", KeysDir + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 			}
 			Utils.ConsoleWriteLine(FileIO.File_Exists(KeysDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 
 			if (RunningRemotelyServer)
 			{
 				Console.Write("Copying keys to " + RemoteFileLocation);
+				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt", true);
 				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys2.txt", true);
-				FileIO.File_Copy(TempDir + Device + "_" + Firmware + "_" + BuildID + ".plist", RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + ".plist", true);
 				Utils.ConsoleWriteLine(FileIO.File_Exists(RemoteFileLocation + Device + "_" + Firmware + "_" + BuildID + "_Keys.txt") ? "   [DONE]" : "   [FAILED]", ConsoleColor.DarkGray);
 			}
 
@@ -569,22 +569,22 @@ namespace iKGD
 			}
 			Dictionary<string, object> RemoteServerDict = new Dictionary<string, object>();
 			Dictionary<string, object> KBAGS = new Dictionary<string, object>();
-			Dictionary<string, object> FirmwareInfo = new Dictionary<string, object>();
-			FirmwareInfo.Add("Device", Device);
-			FirmwareInfo.Add("Firmware", Firmware);
-			FirmwareInfo.Add("BuildID", BuildID);
-			FirmwareInfo.Add("Platform", Platform);
-			FirmwareInfo.Add("Codename", Codename);
-			FirmwareInfo.Add("BoardConfig", BoardConfig);
-			FirmwareInfo.Add("UpdateRamdiskEncrypted", UpdateRamdiskIsEncrypted);
-			FirmwareInfo.Add("RestoreRamdiskEncrypted", RestoreRamdiskIsEncrypted);
-			if (UpdateRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[0], kbag[0]);
-			if (RestoreRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[1], kbag[1]);
+			RemoteServerDict.Add("FirmwareInfo", new Dictionary<string, object> { 
+			                     	{ "Device", Device }, 
+			                     	{ "Firmware", Firmware }, 
+			                     	{ "BuildID", BuildID }, 
+			                     	{ "Platform", Platform }, 
+			                     	{ "Codename", Codename }, 
+			                     	{ "BoardConfig", BoardConfig }, 
+			                     	{ "UpdateRamdiskEncrypted", UpdateRamdiskEncrypted }, 
+			                     	{ "RestoreRamdiskEncrypted", RestoreRamdiskEncrypted }, 
+			                     });
+			if (UpdateRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[FirmwareItems.UpdateRamdisk], kbag[FirmwareItems.UpdateRamdisk]);
+			if (RestoreRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[FirmwareItems.RestoreRamdisk], kbag[FirmwareItems.RestoreRamdisk]);
 			for (int i = 2; i < TotalFirmwareItems; i++)
 			{
 				KBAGS.Add(FirmwareItem[i], kbag[i]);
 			}
-			RemoteServerDict.Add("FirmwareInfo", FirmwareInfo);
 			RemoteServerDict.Add("KBAGS", KBAGS);
 			Plist.writeXml(RemoteServerDict, RemoteFileLocation + "iKGD-RemoteServer.plist");
 			Console.Write("Waiting for IVs and Keys...");
