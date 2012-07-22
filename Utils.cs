@@ -366,29 +366,29 @@ namespace iKGD
 			Dictionary<string, object> dict = new Dictionary<string, object>();
 			Dictionary<string, object> FirmwareKeys = new Dictionary<string, object>();
 			Dictionary<string, object> FirmwareInfo = new Dictionary<string, object>();
-			FirmwareKeys.Add("iBSS", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBSS") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.iBSS] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.iBSS] } });
-			FirmwareKeys.Add("DeviceTree", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("DeviceTree") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.DeviceTree] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.DeviceTree] } });
-			FirmwareKeys.Add("BatteryCharging1", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryCharging1") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryCharging1] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryCharging1] } });
-			FirmwareKeys.Add("GlyphCharging", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("GlyphCharging") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryCharging] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryCharging] } });
-			FirmwareKeys.Add("iBoot", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBoot") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.iBoot] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.iBoot] } });
-			FirmwareKeys.Add("BatteryCharging0", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryCharging0") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryCharging0] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryCharging0] } });
-			FirmwareKeys.Add("BatteryLow0", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryLow0") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryLow0] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryLow0] } });
-			FirmwareKeys.Add("LLB", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("LLB") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.LLB] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.LLB] } });
-			FirmwareKeys.Add("iBEC", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBEC") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.iBEC] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.iBEC] } });
-			FirmwareKeys.Add("KernelCache", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("KernelCache") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.KernelCache] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.KernelCache] } });
-			FirmwareKeys.Add("FileSystem", new Dictionary<string, object> { { "VFDecryptKey", iKGD.VFDecryptKey }, { "FileName", GetImagePathFromBuildManifest("OS") } });
-			FirmwareKeys.Add("AppleLogo", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("AppleLogo") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.AppleLogo] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.AppleLogo] } });
-			if (iKGD.UpdateRamdiskIsEncrypted && iKGD.UpdateRamdiskExists)
-				FirmwareKeys.Add("UpdateRamdisk", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("UpdateRamdisk") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.UpdateRamdisk] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.UpdateRamdisk] } });
-			if (iKGD.RestoreRamdiskIsEncrypted && iKGD.RestoreRamdiskExists)
-				FirmwareKeys.Add("RestoreRamdisk", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("RestoreRamdisk") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.RestoreRamdisk] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.RestoreRamdisk] } });
-			FirmwareKeys.Add("GlyphPlugin", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("GlyphPlugin") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryPlugin] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryPlugin] } });
-			FirmwareKeys.Add("BatteryLow1", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryLow1") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryLow1] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryLow1] } });
+			FirmwareInfo.Add("Version", iKGD.Firmware);
 			if (!string.IsNullOrEmpty(iKGD.DownloadURL))
 				FirmwareInfo.Add("URL", iKGD.DownloadURL);
-			FirmwareInfo.Add("Version", iKGD.Firmware);
-			dict.Add("FirmwareKeys", FirmwareKeys);
+			FirmwareKeys.Add("AppleLogo", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("AppleLogo") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.AppleLogo] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.AppleLogo] } });
+			FirmwareKeys.Add("BatteryCharging0", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryCharging0") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryCharging0] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryCharging0] } });
+			FirmwareKeys.Add("BatteryCharging1", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryCharging1") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryCharging1] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryCharging1] } });
+			FirmwareKeys.Add("BatteryLow0", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryLow0") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryLow0] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryLow0] } });
+			FirmwareKeys.Add("BatteryLow1", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("BatteryLow1") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryLow1] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryLow1] } });
+			FirmwareKeys.Add("DeviceTree", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("DeviceTree") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.DeviceTree] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.DeviceTree] } });
+			FirmwareKeys.Add("FileSystem", new Dictionary<string, object> { { "VFDecryptKey", iKGD.VFDecryptKey }, { "FileName", GetImagePathFromBuildManifest("OS") } });
+			FirmwareKeys.Add("GlyphCharging", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("GlyphCharging") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryCharging] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryCharging] } });
+			FirmwareKeys.Add("GlyphPlugin", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("GlyphPlugin") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.BatteryPlugin] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.BatteryPlugin] } });
+			FirmwareKeys.Add("KernelCache", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("KernelCache") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.KernelCache] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.KernelCache] } });
+			FirmwareKeys.Add("LLB", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("LLB") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.LLB] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.LLB] } });
+			if (iKGD.RestoreRamdiskIsEncrypted && iKGD.RestoreRamdiskExists)
+				FirmwareKeys.Add("RestoreRamdisk", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("RestoreRamdisk") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.RestoreRamdisk] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.RestoreRamdisk] } });
+			if (iKGD.UpdateRamdiskIsEncrypted && iKGD.UpdateRamdiskExists)
+				FirmwareKeys.Add("UpdateRamdisk", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("UpdateRamdisk") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.UpdateRamdisk] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.UpdateRamdisk] } });
+			FirmwareKeys.Add("iBEC", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBEC") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.iBEC] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.iBEC] } });
+			FirmwareKeys.Add("iBSS", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBSS") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.iBSS] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.iBSS] } });
+			FirmwareKeys.Add("iBoot", new Dictionary<string, object> { { "FileName", GetImagePathFromBuildManifest("iBoot") }, { "IV", iKGD.iv[(int)iKGD.FirmwareItems.iBoot] }, { "Key", iKGD.key[(int)iKGD.FirmwareItems.iBoot] } });
 			dict.Add("FirmwareInfo", FirmwareInfo);
+			dict.Add("FirmwareKeys", FirmwareKeys);
 			Plist.writeXml(dict, fileLocation);
 		}
 
