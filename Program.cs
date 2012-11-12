@@ -400,6 +400,7 @@ namespace iKGD
 						break;
 
 					case "iPhone3,1":
+					case "iPhone3,2":
 						BasebandExists = true;
 						Baseband = Path.GetFileName(Utils.GetImagePathFromBuildManifest("BasebandFirmware")).Split('_')[1];
 						break;

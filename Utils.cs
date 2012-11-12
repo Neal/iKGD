@@ -109,6 +109,7 @@ namespace iKGD
 				case "n81ap": return "iPod_touch_4G";
 				case "n88ap": return "iPhone_3GS";
 				case "n90ap": return "iPhone_4_GSM";
+				case "n90bap": return "iPhone_4_GSM_Rev_A";
 				case "n92ap": return "iPhone_4_CDMA";
 				case "k48ap": return "iPad";
 				case "k66ap": return "Apple_TV_2G";
