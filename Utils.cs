@@ -251,7 +251,7 @@ namespace iKGD
 			{
 				string url = "http://api.ios.icj.me/v2/DEVICE/FWBUILD/url/dl".Replace("DEVICE", device).Replace("FWBUILD", firmwarebuild);
 				HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-				request.Timeout = 4000;
+				request.Timeout = 5000;
 				request.Method = "HEAD";
 				request.UserAgent = "iKGD/" + iKGD.Version;
 				return request.GetResponse().ResponseUri.ToString();
