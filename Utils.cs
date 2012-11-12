@@ -92,6 +92,7 @@ namespace iKGD
 				case "n81ap":
 				case "n88ap":
 				case "n90ap":
+				case "n90bap":
 				case "k48ap":
 				case "k66ap":
 					return true;
