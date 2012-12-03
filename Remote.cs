@@ -119,7 +119,7 @@ namespace iKGD
 				Utils.ExecuteCommandAsync("START /B \"Downloading file from zip\" " + iKGD.Resources + "PartialZip.exe \"" + FilePathInZip + "\" \"" + LocalPath + "\" >NUL 2>&1");
 				while (FileIO.File_Exists(LocalPath)) { }
 				while (Utils.GetFileSizeOnDisk(LocalPath) <= bytesToDownload) { }
-				Utils.ExecuteCommand("TASKKILL /F /IM RemoteZip.exe >NUL");
+				Utils.ExecuteCommand("TASKKILL /F /IM PartialZip.exe >NUL");
 			}
 			catch (Exception) { }
 		}
