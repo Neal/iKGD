@@ -17,7 +17,7 @@ namespace iKGD
 {
 	internal sealed class iKGD
 	{
-		public static string Version = "1.0";
+		public static string Version = "1.0.1";
 		public static string TempDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\iKGD\";
 		public static string IPSWdir = TempDir + @"IPSW\";
 		public static string Resources = TempDir + @"resources\";
@@ -577,11 +577,11 @@ namespace iKGD
 			                     	{ "Platform", Platform }, 
 			                     	{ "Codename", Codename }, 
 			                     	{ "BoardConfig", BoardConfig }, 
-			                     	{ "UpdateRamdiskEncrypted", UpdateRamdiskEncrypted }, 
-			                     	{ "RestoreRamdiskEncrypted", RestoreRamdiskEncrypted }, 
+			                     	{ "UpdateRamdiskEncrypted", UpdateRamdiskIsEncrypted }, 
+			                     	{ "RestoreRamdiskEncrypted", RestoreRamdiskIsEncrypted }, 
 			                     });
-			if (UpdateRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[FirmwareItems.UpdateRamdisk], kbag[FirmwareItems.UpdateRamdisk]);
-			if (RestoreRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[FirmwareItems.RestoreRamdisk], kbag[FirmwareItems.RestoreRamdisk]);
+			if (UpdateRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[(int)FirmwareItems.UpdateRamdisk], kbag[(int)FirmwareItems.UpdateRamdisk]);
+			if (RestoreRamdiskIsEncrypted) KBAGS.Add(FirmwareItem[(int)FirmwareItems.RestoreRamdisk], kbag[(int)FirmwareItems.RestoreRamdisk]);
 			for (int i = 2; i < TotalFirmwareItems; i++)
 			{
 				KBAGS.Add(FirmwareItem[i], kbag[i]);
